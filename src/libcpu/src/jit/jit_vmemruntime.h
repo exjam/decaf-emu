@@ -1,8 +1,8 @@
+#pragma once
+#include <atomic>
 #include <common/align.h>
 #include <common/decaf_assert.h>
 #include <common/platform_memory.h>
-#include <asmjit/asmjit.h>
-#include <atomic>
 #include <mutex>
 
 namespace cpu
@@ -10,7 +10,7 @@ namespace cpu
 namespace jit
 {
 
-class VMemRuntime : public asmjit::HostRuntime
+class VMemRuntime
 {
 public:
    VMemRuntime(size_t initialSize, size_t sizeLimit)
@@ -32,7 +32,7 @@ public:
          decaf_abort("Failed to commit memory for JIT");
       }
 
-      _sizeLimit = sizeLimit;
+      mSizeLimit = sizeLimit;
       mCommittedSize = initialSize;
       mIncreaseSize = initialSize;
       mCurAddress = mRootAddress;
@@ -40,27 +40,27 @@ public:
 
    ~VMemRuntime()
    {
-      platform::freeMemory(mRootAddress, _sizeLimit);
+      platform::freeMemory(mRootAddress, mSizeLimit);
    }
 
-   asmjit::Ptr getRootAddress() const
+   uintptr_t getRootAddress() const
    {
       return mRootAddress;
    }
 
-   void * allocate(size_t size, size_t alignment = 4) noexcept
+   void * allocate(size_t size, size_t alignment) noexcept
    {
       // Calculate how much we need to allocate to guarentee we can
       //  align the pointer and still have sufficient room for our data.
       size_t alignedSize = align_up(size + (alignment - 1), alignment);
 
       // Try to grab some space
-      asmjit::Ptr baseCurAddress = mCurAddress.fetch_add(alignedSize);
-      asmjit::Ptr alignedAddress = align_up(baseCurAddress, alignment);
+      uintptr_t baseCurAddress = mCurAddress.fetch_add(alignedSize);
+      uintptr_t alignedAddress = align_up(baseCurAddress, alignment);
       size_t curCommited = mCommittedSize.load();
 
       // Check that we did not overrun the end of the commited area
-      if (alignedAddress + size > curCommited) {
+      if (alignedAddress + alignedSize > mRootAddress + curCommited) {
          // Lock the runtime while we adjusting committed region stuff
          std::unique_lock<std::mutex> lock(mMutex);
 
@@ -68,7 +68,7 @@ public:
          //  our new allocation.  We don't bother doing commissions for other threads
          //  since they are already being forced to lock the mutex anyways.
          auto committedSize = mCommittedSize.load();
-         while (mRootAddress + committedSize < alignedAddress + size) {
+         while (mRootAddress + committedSize < alignedAddress + alignedSize) {
             if (!platform::commitMemory(mRootAddress + committedSize, mIncreaseSize, platform::ProtectFlags::ReadWriteExecute)) {
                // We failed to commit more memory for some reason
                return nullptr;
@@ -79,49 +79,42 @@ public:
          mCommittedSize.store(committedSize);
       }
 
+      memset(reinterpret_cast<void*>(baseCurAddress), 0x90, alignedSize);
       return reinterpret_cast<void*>(alignedAddress);
    }
 
-   ASMJIT_API asmjit::Error add(void** dst, asmjit::Assembler* assembler) noexcept override
+   bool add(void** dst, size_t codeSize, size_t alignment) noexcept
    {
-      size_t codeSize = assembler->getCodeSize();
       if (codeSize == 0) {
          *dst = nullptr;
-         return asmjit::kErrorNoCodeGenerated;
+         return false;
       }
 
       // Lets allocate some memory for the JIT block, allocate only
       //  fails if we have run out of memory, so make sure to indicate
       //  when that happens.
-      auto allocPtr = allocate(codeSize, 8);
+      auto allocPtr = allocate(codeSize, alignment);
       if (!allocPtr) {
          *dst = nullptr;
-         return asmjit::kErrorCodeTooLarge;
+         return false;
       }
 
-      // Lets relocate the code to the memory block
-      size_t relocSize = assembler->relocCode(allocPtr);
-      if (relocSize == 0) {
-         return asmjit::kErrorInvalidState;
-      }
-
-      flush(allocPtr, codeSize);
       *dst = allocPtr;
 
-      return asmjit::kErrorOk;
+      return true;
    }
 
-   ASMJIT_API asmjit::Error release(void* p) noexcept override
+   void release(void* p) noexcept
    {
       // We do not release memory
-      return asmjit::kErrorOk;
    }
 
    std::mutex mMutex;
-   asmjit::Ptr mRootAddress;
+   uintptr_t mRootAddress;
    size_t mIncreaseSize;
-   std::atomic<asmjit::Ptr> mCurAddress;
+   std::atomic<uintptr_t> mCurAddress;
    std::atomic<size_t> mCommittedSize;
+   size_t mSizeLimit;
 
 };
 
