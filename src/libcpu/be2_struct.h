@@ -59,10 +59,8 @@ inline virt_ptr<DstType> virt_cast(const be2_ptr<SrcType> &src)
 template<typename Type>
 struct be2_struct : Type
 {
-   cpu::VirtualPointer<Type> operator &()
-   {
-      return { cpu::translate(this) };
-   }
+   // Please use virt_addrof or phys_addrof instead
+   cpu::VirtualPointer<Type> operator &() = delete;
 };
 
 
@@ -94,8 +92,10 @@ template<typename Type, std::size_t Size>
 class be2_array
 {
 public:
-   using iterator = virt_ptr<Type>;
-   using pointer = virt_ptr<Type>;
+   using virt_iterator = virt_ptr<Type>;
+   using phys_iterator = phys_ptr<Type>;
+   using const_virt_iterator = virt_ptr<const Type>;
+   using const_phys_iterator = phys_ptr<const Type>;
    using value_type = typename be2_array_item_type<Type>::type;
    using reference = value_type &;
    using const_reference = const value_type &;
@@ -115,34 +115,44 @@ public:
       return Size;
    }
 
-   pointer data() const
+   virt_ptr<Type> virt_data() const
    {
       return { cpu::translate(this) };
    }
 
-   iterator begin() const
+   phys_ptr<Type> pys_data() const
    {
-      return data();
+      return { cpu::translatePhysical(this) };
    }
 
-   iterator end() const
+   virt_iterator virt_begin() const
    {
-      return data() + Size;
+      return virt_data();
    }
 
-   iterator cbegin() const
+   virt_iterator virt_end() const
    {
-      return { data() };
+      return virt_data() + Size;
    }
 
-   iterator cend() const
+   const_virt_iterator virt_cbegin() const
    {
-      return { data() + Size };
+      return { virt_data() };
    }
 
-   cpu::VirtualPointer<Type> operator &()
+   const_virt_iterator virt_cend() const
    {
-      return data();
+      return { virt_data() + Size };
+   }
+
+   phys_iterator phys_begin() const
+   {
+      return phys_data();
+   }
+
+   phys_iterator phys_end() const
+   {
+      return phys_data() + Size;
    }
 
    template<typename T = Type, typename = typename std::enable_if<std::is_same<std::remove_const<T>, char>::value, void>::type>
@@ -151,12 +161,25 @@ public:
       return std::string_view { data().getRawPointer() };
    }
 
+   const_phys_iterator phys_cbegin() const
+   {
+      return { phys_data() };
+   }
+
+   const_phys_iterator phys_cend() const
+   {
+      return { phys_data() + Size };
+   }
+
+   // Please use virt_addrof or phys_addrof instead
+   cpu::VirtualPointer<Type> operator &() = delete;
+
 private:
    value_type mValues[Size];
 };
 
 
-/*
+/**
  * Returns a virt_ptr to a big endian value type.
  *
  * The address of the object should be in virtual memory,
@@ -183,7 +206,7 @@ virt_ptr<Type> virt_addrof(const be2_array<Type, Size> &ref)
 }
 
 
-/*
+/**
  * Returns a phys_ptr to a big endian value type.
  *
  * The address of the object should be in physical memory,
