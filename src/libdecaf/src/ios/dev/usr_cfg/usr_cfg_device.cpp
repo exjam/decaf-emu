@@ -305,7 +305,7 @@ UserConfigDevice::readSysConfig(phys_ptr<UCReadSysConfigRequest> request)
 
    for (auto i = 0u; i < request->count; ++i) {
       auto &setting = request->settings[i];
-      auto key = getKeyFromName(setting.name);
+      auto key = getKeyFromName({ setting.name.phys_data().getRawPointer() });
       auto path = fs::Path {};
 
       if (key.storage == Key::Slc) {
@@ -421,7 +421,7 @@ UserConfigDevice::readSysConfig(phys_ptr<UCReadSysConfigRequest> request)
 
          if (size < setting.dataSize) {
             std::memcpy(setting.data.getRawPointer(), str, size + 1);
-            setting.dataSize = size + 1;
+            setting.dataSize = static_cast<uint32_t>(size + 1);
          } else {
             setting.error = UCError::StringTooLong;
             continue;
@@ -442,7 +442,7 @@ UserConfigDevice::readSysConfig(phys_ptr<UCReadSysConfigRequest> request)
                dst[i] = value;
             }
 
-            setting.dataSize = size;
+            setting.dataSize = static_cast<uint32_t>(size);
          } else {
             setting.error = UCError::StringTooLong;
             continue;
@@ -463,7 +463,7 @@ UserConfigDevice::readSysConfig(phys_ptr<UCReadSysConfigRequest> request)
 }
 
 static std::string
-to_string(uint8_t *data,
+to_string(phys_ptr<uint8_t> data,
           size_t size)
 {
    fmt::MemoryWriter out;
@@ -477,14 +477,14 @@ to_string(uint8_t *data,
 
 
 UCError
-UserConfigDevice::writeSysConfig(UCWriteSysConfigRequest *request)
+UserConfigDevice::writeSysConfig(phys_ptr<UCWriteSysConfigRequest> request)
 {
    auto fileSystem = kernel::getFileSystem();
    decaf_check(request->size == sizeof(UCSysConfig));
 
    for (auto i = 0u; i < request->count; ++i) {
       auto &setting = request->settings[i];
-      auto key = getKeyFromName(std::string_view { setting.name });
+      auto key = getKeyFromName({ setting.name.phys_data().getRawPointer() });
       auto path = fs::Path { };
 
       if (key.storage == Key::Slc) {
@@ -599,35 +599,35 @@ UserConfigDevice::writeSysConfig(UCWriteSysConfigRequest *request)
          switch (setting.dataType) {
          case UCDataType::UnsignedByte:
             if (setting.data) {
-               node.text().set(*be_ptr<be_val<uint8_t>> { setting.data });
+               node.text().set(*phys_cast<uint8_t>(setting.data));
             } else {
                node.text().set(0);
             }
             break;
          case UCDataType::UnsignedShort:
             if (setting.data) {
-               node.text().set(*be_ptr<be_val<uint16_t>> { setting.data });
+               node.text().set(*phys_cast<uint16_t>(setting.data));
             } else {
                node.text().set(0);
             }
             break;
          case UCDataType::UnsignedInt:
             if (setting.data) {
-               node.text().set(*be_ptr<be_val<uint32_t>> { setting.data });
+               node.text().set(*phys_cast<uint32_t>(setting.data));
             } else {
                node.text().set(0);
             }
             break;
          case UCDataType::SignedInt:
             if (setting.data) {
-               node.text().set(*be_ptr<be_val<int32_t>> { setting.data });
+               node.text().set(*phys_cast<int32_t>(setting.data));
             } else {
                node.text().set(0);
             }
             break;
          case UCDataType::Float:
             if (setting.data) {
-               node.text().set(*be_ptr<be_val<float>> { setting.data });
+               node.text().set(*phys_cast<float>(setting.data));
             } else {
                node.text().set(0.0f);
             }
@@ -635,14 +635,14 @@ UserConfigDevice::writeSysConfig(UCWriteSysConfigRequest *request)
          case UCDataType::String:
             if (setting.data) {
                // TODO: Check text format, maybe utf8/utf16 etc?
-               node.text().set(be_ptr<char> { setting.data }.get());
+               node.text().set(phys_cast<char>(setting.data).getRawPointer());
             } else {
                node.text().set("");
             }
             break;
          case UCDataType::HexBinary:
             if (setting.data) {
-               node.text().set(to_string(be_ptr<uint8_t> { setting.data }, setting.dataSize).c_str());
+               node.text().set(to_string(phys_cast<uint8_t>(setting.data), setting.dataSize).c_str());
             } else {
                std::string value(static_cast<size_t>(setting.dataSize * 2), '0');
                node.text().set(value.c_str());

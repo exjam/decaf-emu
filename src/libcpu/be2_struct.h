@@ -140,7 +140,7 @@ public:
       return { cpu::translate(this) };
    }
 
-   phys_ptr<Type> pys_data() const
+   phys_ptr<Type> phys_data() const
    {
       return { cpu::translatePhysical(this) };
    }
@@ -173,12 +173,6 @@ public:
    phys_iterator phys_end() const
    {
       return phys_data() + Size;
-   }
-
-   template<typename T = Type, typename = typename std::enable_if<std::is_same<std::remove_const<T>, char>::value, void>::type>
-   constexpr explicit operator std::string_view() const
-   {
-      return std::string_view { data().getRawPointer() };
    }
 
    const_phys_iterator phys_cbegin() const
