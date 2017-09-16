@@ -105,10 +105,10 @@ sValidRootKeys =
 
 
 static bool
-isValidRootKey(const char *key)
+isValidRootKey(std::string_view key)
 {
    for (auto validKey : sValidRootKeys) {
-      if (strcmp(validKey, key) == 0) {
+      if (key.compare(validKey) == 0) {
          return true;
       }
    }
@@ -284,10 +284,10 @@ UserConfigDevice::ioctlv(uint32_t cmd,
 
    switch (static_cast<UCCommand>(cmd)) {
    case UCCommand::ReadSysConfig:
-      result = readSysConfig(&request->readSysConfigRequest);
+      result = readSysConfig(phys_addrof(request->readSysConfigRequest));
       break;
    case UCCommand::WriteSysConfig:
-      result = writeSysConfig(&request->writeSysConfigRequest);
+      result = writeSysConfig(phys_addrof(request->writeSysConfigRequest));
       break;
    default:
       result = UCError::Unsupported;
@@ -298,7 +298,7 @@ UserConfigDevice::ioctlv(uint32_t cmd,
 
 
 UCError
-UserConfigDevice::readSysConfig(UCReadSysConfigRequest *request)
+UserConfigDevice::readSysConfig(phys_ptr<UCReadSysConfigRequest> request)
 {
    auto fileSystem = kernel::getFileSystem();
    decaf_check(request->size == sizeof(UCSysConfig));
@@ -376,7 +376,7 @@ UserConfigDevice::readSysConfig(UCReadSysConfigRequest *request)
       switch (setting.dataType) {
       case UCDataType::UnsignedByte:
          if (setting.dataSize >= 1) {
-            *be_ptr<be_val<uint8_t>> { setting.data } = static_cast<uint8_t>(node.text().as_uint());
+            *phys_cast<uint8_t>(setting.data) = static_cast<uint8_t>(node.text().as_uint());
          } else {
             setting.error = UCError::InvalidParam;
             continue;
@@ -384,7 +384,7 @@ UserConfigDevice::readSysConfig(UCReadSysConfigRequest *request)
          break;
       case UCDataType::UnsignedShort:
          if (setting.dataSize >= 2) {
-            *be_ptr<be_val<uint16_t>> { setting.data } = static_cast<uint16_t>(node.text().as_uint());
+            *phys_cast<uint16_t>(setting.data) = static_cast<uint16_t>(node.text().as_uint());
          } else {
             setting.error = UCError::InvalidParam;
             continue;
@@ -392,7 +392,7 @@ UserConfigDevice::readSysConfig(UCReadSysConfigRequest *request)
          break;
       case UCDataType::UnsignedInt:
          if (setting.dataSize >= 4) {
-            *be_ptr<be_val<uint32_t>> { setting.data } = static_cast<uint32_t>(node.text().as_uint());
+            *phys_cast<uint32_t>(setting.data) = static_cast<uint32_t>(node.text().as_uint());
          } else {
             setting.error = UCError::InvalidParam;
             continue;
@@ -400,7 +400,7 @@ UserConfigDevice::readSysConfig(UCReadSysConfigRequest *request)
          break;
       case UCDataType::SignedInt:
          if (setting.dataSize >= 4) {
-            *be_ptr<be_val<int32_t>> { setting.data } = static_cast<int32_t>(node.text().as_int());
+            *phys_cast<int32_t>(setting.data) = static_cast<int32_t>(node.text().as_int());
          } else {
             setting.error = UCError::InvalidParam;
             continue;
@@ -408,7 +408,7 @@ UserConfigDevice::readSysConfig(UCReadSysConfigRequest *request)
          break;
       case UCDataType::Float:
          if (setting.dataSize >= 4) {
-            *be_ptr<be_val<float>> { setting.data } = node.text().as_float();
+            *phys_cast<float>(setting.data) = node.text().as_float();
          } else {
             setting.error = UCError::InvalidParam;
             continue;
@@ -420,7 +420,7 @@ UserConfigDevice::readSysConfig(UCReadSysConfigRequest *request)
          auto size = strlen(str);
 
          if (size < setting.dataSize) {
-            std::memcpy(setting.data, str, size + 1);
+            std::memcpy(setting.data.getRawPointer(), str, size + 1);
             setting.dataSize = size + 1;
          } else {
             setting.error = UCError::StringTooLong;
@@ -433,7 +433,7 @@ UserConfigDevice::readSysConfig(UCReadSysConfigRequest *request)
          auto size = strlen(src) / 2;
 
          if (size <= setting.dataSize) {
-            auto dst = be_ptr<uint8_t> { setting.data };
+            auto dst = phys_cast<uint8_t>(setting.data);
 
             for (auto i = 0u; i < size; ++i) {
                auto value = uint8_t { 0 };
@@ -484,7 +484,7 @@ UserConfigDevice::writeSysConfig(UCWriteSysConfigRequest *request)
 
    for (auto i = 0u; i < request->count; ++i) {
       auto &setting = request->settings[i];
-      auto key = getKeyFromName(setting.name);
+      auto key = getKeyFromName(std::string_view { setting.name });
       auto path = fs::Path { };
 
       if (key.storage == Key::Slc) {

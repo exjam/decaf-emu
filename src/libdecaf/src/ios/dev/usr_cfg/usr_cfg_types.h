@@ -1,8 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <common/be_ptr.h>
-#include <common/be_val.h>
 #include <common/structsize.h>
+#include <libcpu/be2_struct.h>
 
 namespace ios
 {
@@ -22,12 +21,12 @@ namespace usr_cfg
 
 struct UCSysConfig
 {
-   char name[64];
-   be_val<uint32_t> access;
-   be_val<UCDataType> dataType;
-   be_val<UCError> error;
-   be_val<uint32_t> dataSize;
-   be_ptr<void> data;
+   be2_array<char, 64> name;
+   be2_val<uint32_t> access;
+   be2_val<UCDataType> dataType;
+   be2_val<UCError> error;
+   be2_val<uint32_t> dataSize;
+   be2_phys_ptr<void> data;
 };
 CHECK_OFFSET(UCSysConfig, 0x00, name);
 CHECK_OFFSET(UCSysConfig, 0x40, access);

@@ -3,6 +3,7 @@
 #include "pointer.h"
 #include "mmu.h"
 #include <cstdlib>
+#include <string_view>
 
 /*
  * Define some global short names for easy access to cpu classes
@@ -142,6 +143,12 @@ public:
    cpu::VirtualPointer<Type> operator &()
    {
       return data();
+   }
+
+   template<typename T = Type, typename = typename std::enable_if<std::is_same<std::remove_const<T>, char>::value, void>::type>
+   constexpr explicit operator std::string_view() const
+   {
+      return std::string_view { data().getRawPointer() };
    }
 
 private:

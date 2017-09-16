@@ -234,35 +234,42 @@ public:
       return mAddress < other.mAddress;
    }
 
-   constexpr Pointer &operator ++ ()
+
+   template<typename K = ValueType>
+   constexpr typename std::enable_if<!std::is_void<K>::value, const Pointer &>::type operator ++ ()
    {
       mAddress += sizeof(value_type);
       return *this;
    }
 
-   constexpr Pointer &operator += (ptrdiff_t value)
+   template<typename K = ValueType>
+   constexpr typename std::enable_if<!std::is_void<K>::value, const Pointer &>::type operator += (ptrdiff_t value)
    {
       mAddress += value * sizeof(value_type);
       return *this;
    }
 
-   constexpr Pointer &operator -= (ptrdiff_t value)
+   template<typename K = ValueType>
+   constexpr typename std::enable_if<!std::is_void<K>::value, const Pointer &>::type operator -= (ptrdiff_t value)
    {
       mAddress -= value * sizeof(value_type);
       return *this;
    }
 
-   constexpr Pointer operator + (ptrdiff_t value) const
+   template<typename K = ValueType>
+   constexpr typename std::enable_if<!std::is_void<K>::value, Pointer>::type operator + (ptrdiff_t value) const
    {
       return Pointer { mAddress + (value * sizeof(value_type)) };
    }
 
-   constexpr ptrdiff_t operator -(const Pointer &other) const
+   template<typename K = ValueType>
+   constexpr typename std::enable_if<!std::is_void<K>::value, ptrdiff_t>::type operator -(const Pointer &other) const
    {
       return (mAddress - other.mAddress) / sizeof(value_type);
    }
 
-   constexpr Pointer operator -(ptrdiff_t value) const
+   template<typename K = ValueType>
+   constexpr typename std::enable_if<!std::is_void<K>::value, Pointer>::type operator -(ptrdiff_t value) const
    {
       return Pointer { mAddress - (value * sizeof(value_type)) };
    }

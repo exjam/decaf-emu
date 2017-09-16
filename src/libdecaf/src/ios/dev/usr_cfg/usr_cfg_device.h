@@ -56,10 +56,10 @@ public:
 
 private:
    UCError
-   readSysConfig(UCReadSysConfigRequest *request);
+   readSysConfig(phys_ptr<UCReadSysConfigRequest> request);
 
    UCError
-   writeSysConfig(UCWriteSysConfigRequest *request);
+   writeSysConfig(phys_ptr<UCWriteSysConfigRequest> request);
 };
 
 /** @} */

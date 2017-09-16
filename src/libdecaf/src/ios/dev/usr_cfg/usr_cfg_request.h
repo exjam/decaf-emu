@@ -3,8 +3,7 @@
 #include "usr_cfg_types.h"
 
 #include <cstdint>
-#include <common/be_val.h>
-#include <common/be_ptr.h>
+#include <libcpu/be2_struct.h>
 #include <common/structsize.h>
 
 namespace ios
@@ -25,9 +24,9 @@ namespace usr_cfg
 
 struct UCReadSysConfigRequest
 {
-   be_val<uint32_t> count;
-   be_val<uint32_t> size;
-   UCSysConfig settings[1];
+   be2_val<uint32_t> count;
+   be2_val<uint32_t> size;
+   be2_array<UCSysConfig, 1> settings;
 };
 CHECK_OFFSET(UCReadSysConfigRequest, 0x0, count);
 CHECK_OFFSET(UCReadSysConfigRequest, 0x4, size);
@@ -36,9 +35,9 @@ CHECK_SIZE(UCReadSysConfigRequest, 0x5C);
 
 struct UCWriteSysConfigRequest
 {
-   be_val<uint32_t> count;
-   be_val<uint32_t> size;
-   UCSysConfig settings[1];
+   be2_val<uint32_t> count;
+   be2_val<uint32_t> size;
+   be2_array<UCSysConfig, 1> settings;
 };
 CHECK_OFFSET(UCWriteSysConfigRequest, 0x0, count);
 CHECK_OFFSET(UCWriteSysConfigRequest, 0x4, size);
@@ -49,8 +48,8 @@ struct UCRequest
 {
    union
    {
-      UCReadSysConfigRequest readSysConfigRequest;
-      UCWriteSysConfigRequest writeSysConfigRequest;
+      be2_struct<UCReadSysConfigRequest> readSysConfigRequest;
+      be2_struct<UCWriteSysConfigRequest> writeSysConfigRequest;
    };
 };
 
