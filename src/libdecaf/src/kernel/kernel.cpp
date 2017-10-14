@@ -1,3 +1,4 @@
+#include "cafe/kernel/cafe_kernel_ipckdriver.h"
 #include "debugger/debugger.h"
 #include "decaf_events.h"
 #include "filesystem/filesystem.h"
@@ -303,7 +304,7 @@ cpuInterruptHandler(uint32_t interrupt_flags)
    }
 
    if (interrupt_flags & cpu::IPC_INTERRUPT) {
-      kernel::ipcDriverKernelHandleInterrupt();
+      cafe::kernel::handleIpcInterrupt();
    }
 
    coreinit::internal::enableScheduler();

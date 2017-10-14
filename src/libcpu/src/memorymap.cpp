@@ -21,13 +21,6 @@ static constexpr PhysicalAddress MEM1BaseAddress = PhysicalAddress { 0 };
 static constexpr PhysicalAddress MEM1EndAddress  = PhysicalAddress { 0x01FFFFFF };
 static constexpr size_t MEM1Size = (MEM1EndAddress - MEM1BaseAddress) + 1;
 
-// HACK: Doesn't exist at this physical address on hardware. _DECAF ONLY_
-// HACK: Set to page size (128kb) even though it's actually 16kb per core,
-// due to memory map restrictions.
-static constexpr PhysicalAddress LCBaseAddress = PhysicalAddress { 0x02000000 };
-static constexpr PhysicalAddress LCEndAddress = PhysicalAddress { 0x0201FFFF };
-static constexpr size_t LCSize = (LCEndAddress - LCBaseAddress) + 1;
-
 static constexpr PhysicalAddress MEM0BaseAddress = PhysicalAddress { 0x08000000 };
 static constexpr PhysicalAddress MEM0EndAddress = PhysicalAddress { 0x082DFFFF };
 static constexpr size_t MEM0Size = (MEM0EndAddress - MEM0BaseAddress) + 1;
@@ -43,6 +36,21 @@ static constexpr size_t SRAM1Size = (SRAM1EndAddress - SRAM1BaseAddress) + 1;
 static constexpr PhysicalAddress SRAM0BaseAddress = PhysicalAddress { 0xFFFF0000 };
 static constexpr PhysicalAddress SRAM0EndAddress = PhysicalAddress { 0xFFFFFFFF };
 static constexpr size_t SRAM0Size = (SRAM0EndAddress - SRAM0BaseAddress) + 1;
+
+// HACK: Doesn't exist at this physical address on hardware. _DECAF ONLY_
+// HACK: Set to page size (128kb) even though it's actually 16kb per core,
+// due to memory map restrictions.
+static constexpr PhysicalAddress LCBaseAddress = PhysicalAddress { 0x02000000 };
+static constexpr PhysicalAddress LCEndAddress = PhysicalAddress { 0x0201FFFF };
+static constexpr size_t LCSize = (LCEndAddress - LCBaseAddress) + 1;
+
+// Tiling Aperture dedicated memory.
+// HACK: Doesn't exist at this physical address on hardware. _DECAF ONLY_
+// On hardware the memory controller maps apertures using fancy logic,
+// we can't do that so we need a dedicated memory region for it.
+static constexpr size_t TASize = 256 * 1024 * 1024;
+static constexpr PhysicalAddress TABaseAddress = PhysicalAddress { 0xD0000000 };
+static constexpr PhysicalAddress TAEndAddress = TABaseAddress + TASize - 1;
 
 
 MemoryMap::~MemoryMap()
