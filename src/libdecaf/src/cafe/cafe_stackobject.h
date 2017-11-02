@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <common/align.h>
 #include <common/decaf_assert.h>
 #include <libcpu/cpu.h>
@@ -10,7 +11,7 @@ namespace cafe
 template<typename Type>
 class StackObject : public virt_ptr<Type>
 {
-   static constexpr auto AlignedSize = align_up(static_cast<uint32_t>(sizeof(Type)), std::max(alignof(Type), 4));
+   static constexpr auto AlignedSize = align_up(static_cast<uint32_t>(sizeof(Type)), std::max(alignof(Type), 4u));
 
 public:
    StackObject()

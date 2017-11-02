@@ -161,7 +161,11 @@ IPCLDriver_Open()
                           virt_addrof(driver->requests[i]));
    }
 
-   cafe::kernel::IPCKDriver_Open(0, nullptr, nullptr, nullptr, nullptr);
+   auto error = loaderOpenIpckDriver();
+   if (error < ios::Error::OK) {
+      return error;
+   }
+
    driver->status = IPCLDriverStatus::Open;
    return ios::Error::OK;
 }
@@ -182,7 +186,7 @@ IPCLDriver_GetInstance(virt_ptr<IPCLDriver> *outDriver)
 ios::Error
 IPCLDriver_AllocateRequestBlock(virt_ptr<IPCLDriver> driver,
                                 virt_ptr<IPCLDriverRequest> *outRequest,
-                                int32_t handle,
+                                ios::Handle handle,
                                 ios::Command command,
                                 IPCLAsyncCallbackFn callback,
                                 virt_ptr<void> callbackContext)
@@ -398,7 +402,7 @@ sendFIFOToKernel(virt_ptr<IPCLDriver> driver)
       }
 
       driver->status = IPCLDriverStatus::Submitting;
-      error = IPCKDriver_SubmitUserRequest(driver->currentSendTransaction->ipckRequestBuffer);
+      error = loaderSubmitIpckRequest(driver->currentSendTransaction->ipckRequestBuffer);
       IPCLDriver_FIFOPop(virt_addrof(driver->outboundFifo), &poppedRequest);
       decaf_check(poppedRequest == driver->currentSendTransaction);
       driver->status = IPCLDriverStatus::Open;
@@ -430,7 +434,7 @@ IPCLDriver_SubmitRequestBlock(virt_ptr<IPCLDriver> driver,
 }
 
 ios::Error
-IPCLDriver_IoctlAsync(int32_t handle,
+IPCLDriver_IoctlAsync(ios::Handle handle,
                       uint32_t command,
                       virt_ptr<const void> inputBuffer,
                       uint32_t inputLength,

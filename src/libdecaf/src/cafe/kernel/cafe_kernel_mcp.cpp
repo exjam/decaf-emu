@@ -1,6 +1,15 @@
 #include "cafe_kernel_mcp.h"
 
-namespace cafe::kernel::internal
+namespace cafe::kernel
+{
+
+MCPHandle
+loaderGetMcpHandle()
+{
+   return MCPHandle { -1 };
+}
+
+namespace internal
 {
 
 ios::Error
@@ -10,9 +19,11 @@ MCP_Open()
 }
 
 ios::Error
-MCP_Close()
+MCP_Close(MCPHandle handle)
 {
    return ios::Error::Invalid;
 }
 
-} // namespace cafe::kernel::internal
+} // namespace internal
+
+} // namespace cafe::kernel

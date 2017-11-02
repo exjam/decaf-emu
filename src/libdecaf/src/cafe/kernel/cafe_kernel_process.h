@@ -11,6 +11,7 @@ enum class RamProcessId : int32_t
    Invalid = -1,
    Kernel = 0,
    Root = 1,
+   Loader = 2,
    OverlayApp = 4,
    HomeMenu = 5,
    ErrorDisplay = 6,
@@ -43,6 +44,8 @@ enum class KernelProcessId : int32_t
    Loader = 2,
 };
 
+using TitleId = uint64_t;
+
 RamProcessId
 getRampidFromUpid(UniqueProcessId id);
 
@@ -51,6 +54,9 @@ getRampid();
 
 KernelProcessId
 getKernelProcessId();
+
+TitleId
+getTitleId();
 
 void
 switchToProcess(UniqueProcessId id);

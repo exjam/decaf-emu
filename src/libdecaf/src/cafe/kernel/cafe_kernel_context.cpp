@@ -1,3 +1,4 @@
+#include "cafe_kernel.h"
 #include "cafe_kernel_context.h"
 #include "cafe/cafe_ppc_interface_invoke.h"
 
@@ -11,21 +12,29 @@ namespace cafe::kernel
 struct HostContext
 {
    platform::Fiber *fiber = nullptr;
-   Context *context = nullptr;
+   virt_ptr<Context> context = nullptr;
    cpu::Tracer *tracer = nullptr;
 };
 
-static std::array<Context *, 3>
+static std::array<virt_ptr<Context>, 3>
 sCurrentContext;
 
-static std::array<Context *, 3>
+static std::array<virt_ptr<Context>, 3>
 sDeadContext;
 
-static std::array<Context, 3>
+static std::array<virt_ptr<Context>, 3>
 sIdleContext;
 
-static std::array<platform::Fiber *, 3>
-sIdleFiber;
+constexpr auto CoreThreadStackSize = 0x400u;
+
+struct StaticContextData
+{
+   be2_array<Context, 3> coreThreadContext;
+   be2_array<std::byte, CoreThreadStackSize * 3> coreThreadStackBuffer;
+};
+
+static virt_ptr<StaticContextData>
+sContextData;
 
 static void
 checkDeadContext();
@@ -33,7 +42,7 @@ checkDeadContext();
 using ContextEntryPoint = virt_func_ptr<void>;
 
 void
-saveContext(Context *context)
+copyContextFromCpu(virt_ptr<Context> context)
 {
    auto state = cpu::this_core::state();
 
@@ -60,7 +69,7 @@ saveContext(Context *context)
 }
 
 void
-restoreContext(Context *context)
+copyContextToCpu(virt_ptr<Context> context)
 {
    auto state = cpu::this_core::state();
 
@@ -92,17 +101,12 @@ sleepCurrentContext()
    // Grab the current core and context information
    auto core = cpu::this_core::state();
    auto context = sCurrentContext[core->id];
+   decaf_check(context);
 
-   if (context) {
-      // Save all our registers to the context
-      saveContext(context);
-      context->nia = core->nia;
-      context->cia = core->cia;
-   } else {
-      // We save the idle context's register information as well
-      //  mainly so that it doesn't complain about core state loss.
-      saveContext(&sIdleContext[core->id]);
-   }
+   // Save all our registers to the context
+   copyContextFromCpu(context);
+   context->nia = core->nia;
+   context->cia = core->cia;
 
    // Some things to help us when debugging...
    core->nia = 0xFFFFFFFF;
@@ -119,25 +123,15 @@ wakeCurrentContext()
    // Grab the current core and context information
    auto core = cpu::this_core::state();
    auto context = sCurrentContext[core->id];
+   decaf_check(context);
 
-   // If we switched into a new context, we need to restore it back
-   //  to how it was configured before we suspended it.
-   if (context) {
-      // Restore our context from the OSContext
-      restoreContext(context);
-      core->nia = context->nia;
-      core->cia = context->cia;
+   // Restore our context from the OSContext
+   copyContextToCpu(context);
+   core->nia = context->nia;
+   core->cia = context->cia;
 
-      // Some things to help us when debugging...
-      cpu::this_core::setTracer(context->hostContext->tracer);
-   } else {
-      // Restore the idle context information stored earlier
-      restoreContext(&sIdleContext[core->id]);
-
-      // These are the 'defacto' idle-thread values
-      core->nia = 0xFFFFFFFFu;
-      core->cia = 0xFFFFFFFFu;
-   }
+   // Some things to help us when debugging...
+   cpu::this_core::setTracer(context->hostContext->tracer);
 }
 
 static void
@@ -183,31 +177,11 @@ fiberEntryPoint(void*)
 
    // Invoke the PPC thread entry point, note we do not pass any arguments
    // because whoever created the thread would have already put the arguments
-   // into the registers.
+   // into the guest registers.
    auto core = cpu::this_core::state();
-   auto entryPoint = ContextEntryPoint { nullptr }; // virt_func_cast<ContextEntryPoint>(virt_addr { core->nia });
+   auto entryPoint = virt_func_cast<ContextEntryPoint>(static_cast<virt_addr>(core->nia));
    invoke(core, entryPoint);
    decaf_check("Control flow returned to fiber entry point");
-}
-
-static HostContext *
-allocateHostContext(Context *context)
-{
-   auto hostContext = new HostContext();
-   hostContext->tracer = cpu::allocTracer(1024 * 10 * 10);
-   hostContext->fiber = platform::createFiber(fiberEntryPoint, nullptr);
-   hostContext->context = context;
-   return hostContext;
-}
-
-void
-reallocateContextFiber(Context *context,
-                       platform::FiberEntryPoint entry)
-{
-   auto oldFiber = context->hostContext->fiber;
-   auto newFiber = platform::createFiber(entry, nullptr);
-   context->hostContext->fiber = newFiber;
-   platform::swapToFiber(oldFiber, newFiber);
 }
 
 static void
@@ -244,18 +218,27 @@ checkDeadContext()
 }
 
 void
-initCoreFiber()
+initialiseCoreContext(cpu::Core *core)
 {
-   // Grab the currently running core state.
-   auto coreId = cpu::this_core::id();
+   // Allocate the root context
+   auto context = virt_addrof(sContextData->coreThreadContext[core->id]);
+   auto stack = virt_addrof(sContextData->coreThreadStackBuffer[CoreThreadStackSize * 3]);
+   context->gpr[1] = virt_cast<virt_addr>(stack).getAddress() + CoreThreadStackSize;
 
-   // Grab the system fiber
-   auto fiber = platform::getThreadFiber();
+   // Setup host context for the root fiber
+   context->hostContext = new HostContext();
+   context->hostContext->tracer = cpu::allocTracer(1024 * 10 * 10);
+   context->hostContext->fiber = platform::getThreadFiber();
+   context->hostContext->context = context;
 
    // Save some needed information about the fiber run states.
-   sIdleFiber[coreId] = fiber;
-   sCurrentContext[coreId] = nullptr;
-   sDeadContext[coreId] = nullptr;
+   sIdleContext[core->id] = context;
+   sCurrentContext[core->id] = context;
+   sDeadContext[core->id] = nullptr;
+
+   // Set the core nia/cia to something debuggable
+   core->nia = 0xFFFFFFF0u | core->id;
+   core->cia = 0xFFFFFFF0u | core->id;
 }
 
 void
@@ -271,28 +254,59 @@ exitThreadNoLock()
 }
 
 static platform::Fiber *
-getContextFiber(Context *context)
+getContextFiber(virt_ptr<Context> context)
 {
-   auto coreId = cpu::this_core::id();
-   if (!context) {
-      return sIdleFiber[coreId];
-   }
-
    if (!context->hostContext) {
-      context->hostContext = allocateHostContext(context);
+      context->hostContext = new HostContext();
+      context->hostContext->tracer = cpu::allocTracer(1024 * 10 * 10);
+      context->hostContext->fiber = platform::createFiber(fiberEntryPoint, nullptr);
+      context->hostContext->context = context;
    }
 
    return context->hostContext->fiber;
 }
 
 void
-setContext(Context *next)
+resetFaultedContextFiber(virt_ptr<Context> context,
+                         platform::FiberEntryPoint entry,
+                         void *param)
+{
+   auto oldFiber = context->hostContext->fiber;
+   auto newFiber = platform::createFiber(entry, param);
+   context->hostContext->fiber = newFiber;
+   platform::swapToFiber(oldFiber, newFiber);
+}
+
+virt_ptr<Context>
+getCurrentContext()
+{
+   auto coreId = cpu::this_core::id();
+   auto current = sCurrentContext[coreId];
+   return current;
+}
+
+virt_ptr<Context>
+setCurrentContext(virt_ptr<Context> next)
+{
+   auto coreId = cpu::this_core::id();
+   auto current = sCurrentContext[coreId];
+
+   copyContextFromCpu(current);
+   copyContextToCpu(next);
+}
+
+void
+switchContext(virt_ptr<Context> next)
 {
    // Don't do anything if we are switching to the same context.
    auto coreId = cpu::this_core::id();
    auto current = sCurrentContext[coreId];
    if (current == next) {
       return;
+   }
+
+   if (!next) {
+      next = sIdleContext[coreId];
    }
 
    // Perform savage operations before the switch
@@ -308,5 +322,15 @@ setContext(Context *next)
    wakeCurrentContext();
 }
 
+namespace internal
+{
+
+void
+initialiseStaticContextData()
+{
+   sContextData = allocStatic<StaticContextData>();
+}
+
+} // namespace internal
 
 } // namespace cafe::kernel

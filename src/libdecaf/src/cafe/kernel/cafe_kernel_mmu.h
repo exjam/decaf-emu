@@ -4,6 +4,79 @@
 namespace cafe::kernel
 {
 
+enum class PhysicalRegion
+{
+   Invalid = -1,
+   MEM1 = 0,
+   LockedCache,
+   MEM0,
+   MEM0CafeKernel,
+   MEM0IosKernel,
+   MEM0IosMcp,
+   MEM0IosCrypto,
+   MEM2,
+   MEM2IosUsb,
+   MEM2IosFs,
+   MEM2IosPad,
+   MEM2IosNet,
+   MEM2IosAcp,
+   MEM2IosNsec,
+   MEM2IosNim,
+   MEM2IosFpd,
+   MEM2IosTest,
+   MEM2IosAuxil,
+   MEM2IosBsp,
+   MEM2ForegroundBucket,
+   MEM2SharedData,
+   MEM2CafeKernelHeap,
+   MEM2LoaderHeap,
+   MEM2IosSharedHeap,
+   MEM2IosNetIobuf,
+   MEM2IosFsRamdisk,
+   MEM2HomeMenu,
+   MEM2Root,
+   MEM2CafeOS,
+   MEM2ErrorDisplay,
+   MEM2OverlayApp,
+   MEM2MainApp,
+   MEM2DevKit,
+   TilingApertures,
+   SRAM1,
+   SRAM1C2W,
+   SRAM0,
+   SRAM0IosKernel,
+};
+
+enum class VirtualRegion
+{
+   Invalid = -1,
+   CafeOS = 0,
+   MainAppCode,
+   MainAppData,
+   OverlayAppCode,
+   OverlayAppData,
+   TilingApertures,
+   VirtualMapRange,
+   ForegroundBucket,
+   MEM1,
+   SharedData,
+   LockedCache,
+   KernelStatic,
+   KernelHeap,
+};
+
+phys_addr_range
+getPhysicalAddressRange(PhysicalRegion region);
+
+virt_addr_range
+getKernelVirtualAddressRange(VirtualRegion region);
+
+bool
+mapKernelVirtualMemory();
+
+bool
+mapGlobalVirtualMemory();
+
 phys_addr
 virtualToPhysical(virt_addr pa);
 
@@ -37,5 +110,13 @@ virtualToPhysical(be2_virt_ptr<Type> ptr)
 {
    return phys_cast<Type *>(virtualToPhysical(virt_cast<virt_addr>(ptr)));
 }
+
+namespace internal
+{
+
+void
+initialiseMmu();
+
+} // namespace internal
 
 } // namespace cafe::kernel

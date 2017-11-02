@@ -2,6 +2,7 @@
 #include "cafe_loader_ipcldriver.h"
 #include "cafe_loader_process.h"
 #include "cafe/kernel/cafe_kernel_ipckdriver.h"
+#include "cafe/kernel/cafe_kernel_mcp.h"
 #include "cafe/kernel/cafe_kernel_process.h"
 #include "ios/mcp/ios_mcp_mcp.h"
 
@@ -80,7 +81,7 @@ LiInitIopInterface()
    iop_percore_initheap();
 
    if (sIopData->mcpHandle <= 0) {
-      sIopData->mcpHandle = IPCKDriver_OpenMCP();
+      sIopData->mcpHandle = loaderGetMcpHandle();
    }
 }
 
@@ -135,7 +136,7 @@ LiLoadAsync(std::string_view name,
 }
 
 static ios::Error
-LiPollLoaderCompletion()
+LiPollForCompletion()
 {
    virt_ptr<IPCLDriver> driver;
    auto error = IPCLDriver_GetInstance(&driver);
@@ -143,7 +144,7 @@ LiPollLoaderCompletion()
       return error;
    }
 
-   auto request = IPCKDriver_PollLoaderCompletion();
+   auto request = loaderPollIpckCompletion();
    if (!request) {
       return ios::Error::QEmpty;
    }
@@ -155,7 +156,7 @@ static ios::Error
 LiWaitAsyncReply(virt_ptr<LiLoadReply> reply)
 {
    while (!reply->done) {
-      LiPollLoaderCompletion();
+      LiPollForCompletion();
    }
 
    reply->done = FALSE;

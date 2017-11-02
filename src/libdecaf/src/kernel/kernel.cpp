@@ -122,6 +122,7 @@ initialise()
    initialiseVirtualMemory();
    ios::start();
    initialiseHleMmodules();
+#if 0
    cpu::setCoreEntrypointHandler(&cpuEntrypoint);
    cpu::setSegfaultHandler(&cpuSegfaultHandler);
    cpu::setIllInstHandler(&cpuIllInstHandler);
@@ -130,6 +131,7 @@ initialise()
    if (decaf::config::log::branch_trace) {
       cpu::setBranchTraceHandler(&cpuBranchTraceHandler);
    }
+#endif
 
    auto bounds = kernel::getVirtualRange(kernel::VirtualRegion::SystemHeap);
    sSystemHeap = new TeenyHeap { virt_cast<void *>(bounds.start).getRawPointer(), bounds.size };

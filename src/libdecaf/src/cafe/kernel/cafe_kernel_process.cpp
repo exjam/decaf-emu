@@ -3,12 +3,6 @@
 namespace cafe::kernel
 {
 
-void
-switchToProcess(UniqueProcessId id)
-{
-
-}
-
 RamProcessId
 getRampidFromUpid(UniqueProcessId id)
 {
@@ -26,6 +20,18 @@ KernelProcessId
 getKernelProcessId()
 {
    return KernelProcessId::Invalid;
+}
+
+TitleId
+getTitleId()
+{
+   return 0;
+}
+
+void
+switchToProcess(UniqueProcessId id)
+{
+
 }
 
 } // namespace cafe::kernel

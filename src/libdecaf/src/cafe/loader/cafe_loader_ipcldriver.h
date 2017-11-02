@@ -223,11 +223,11 @@ IPCLDriver_GetInstance(virt_ptr<IPCLDriver> *outDriver);
 
 ios::Error
 IPCLDriver_ProcessReply(virt_ptr<IPCLDriver> driver,
-                        virt_ptr<ios::IpcRequest> request);
+                        virt_ptr<cafe::kernel::IPCKDriverRequest> ipckRequest);
 
 ios::Error
-IPCLDriver_IoctlAsync(uint32_t handle,
-                      uint32_t request,
+IPCLDriver_IoctlAsync(ios::Handle handle,
+                      uint32_t command,
                       virt_ptr<const void> inputBuffer,
                       uint32_t inputLength,
                       virt_ptr<void> outputBuffer,

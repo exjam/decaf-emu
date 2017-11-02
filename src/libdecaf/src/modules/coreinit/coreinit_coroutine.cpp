@@ -37,7 +37,7 @@ OSLoadCoroutine(virt_ptr<OSCoroutine> coroutine,
    }
 
    // Copy context to CPU registers
-   cafe::kernel::copyContextToCpu(context);
+   cafe::kernel::copyContextToCpu(virt_cast<cafe::kernel::Context *>(cpu::translate(context)));
    return returnValue;
 }
 
@@ -47,7 +47,7 @@ OSSaveCoroutine(virt_ptr<OSCoroutine> coroutine)
    // Copy CPU registers to context
    auto thread = OSGetCurrentThread();
    auto context = &thread->context;
-   cafe::kernel::copyContextFromCpu(context);
+   cafe::kernel::copyContextFromCpu(virt_cast<cafe::kernel::Context *>(cpu::translate(context)));
 
    // Update the coroutine with context registers
    coroutine->lr = context->lr;

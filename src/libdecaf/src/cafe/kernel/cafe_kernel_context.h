@@ -1,10 +1,12 @@
 #pragma once
+#include <common/platform_fiber.h>
+#include <libcpu/cpu.h>
 #include <libcpu/be2_struct.h>
 
 namespace cafe::kernel
 {
 
-#ifndef KERNEL_LLE
+#ifndef DECAF_KERNEL_LLE
 struct HostContext;
 #endif
 
@@ -20,7 +22,7 @@ struct Context
    be2_val<uint32_t> ctr;
    be2_val<uint32_t> xer;
 
-#ifdef KERNEL_LLE
+#ifdef DECAF_KERNEL_LLE
    be2_val<uint32_t> srr0;
    be2_val<uint32_t> srr1;
 #else
@@ -43,7 +45,7 @@ struct Context
    be2_val<uint32_t> pmc1;
    be2_val<uint32_t> pmc2;
 
-#ifdef KERNEL_LLE
+#ifdef DECAF_KERNEL_LLE
    be2_val<uint32_t> pmc3;
    be2_val<uint32_t> pmc4;
 #else
@@ -59,7 +61,7 @@ CHECK_OFFSET(Context, 0x88, cr);
 CHECK_OFFSET(Context, 0x8c, lr);
 CHECK_OFFSET(Context, 0x90, ctr);
 CHECK_OFFSET(Context, 0x94, xer);
-#ifdef KERNEL_LLE
+#ifdef DECAF_KERNEL_LLE
 CHECK_OFFSET(Context, 0x98, srr0);
 CHECK_OFFSET(Context, 0x9c, srr1);
 #endif
@@ -74,12 +76,43 @@ CHECK_OFFSET(Context, 0x2f8, starttime);
 CHECK_OFFSET(Context, 0x300, error);
 CHECK_OFFSET(Context, 0x308, pmc1);
 CHECK_OFFSET(Context, 0x30c, pmc2);
-#ifdef KERNEL_LLE
+#ifdef DECAF_KERNEL_LLE
 CHECK_OFFSET(Context, 0x310, pmc3);
 CHECK_OFFSET(Context, 0x314, pmc4);
 #endif
 CHECK_OFFSET(Context, 0x318, mmcr0);
 CHECK_OFFSET(Context, 0x31c, mmcr1);
 CHECK_SIZE(Context, 0x320);
+
+void
+initialiseCoreContext(cpu::Core *core);
+
+void
+copyContextToCpu(virt_ptr<Context> context);
+
+void
+copyContextFromCpu(virt_ptr<Context> context);
+
+void
+resetFaultedContextFiber(virt_ptr<Context> context,
+                         platform::FiberEntryPoint entry,
+                         void *param);
+
+virt_ptr<Context>
+getCurrentContext();
+
+virt_ptr<Context>
+setCurrentContext(virt_ptr<Context> next);
+
+void
+switchContext(virt_ptr<Context> next);
+
+namespace internal
+{
+
+void
+initialiseStaticContextData();
+
+} // namespace internal
 
 } // namespace cafe::kernel
