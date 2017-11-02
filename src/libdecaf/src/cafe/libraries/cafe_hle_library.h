@@ -1,6 +1,6 @@
 #pragma once
 
-namespace cafe
+namespace cafe::hle
 {
 
 enum class LibraryId
@@ -45,6 +45,12 @@ public:
       mID(id)
    {
    }
+
+   virtual ~Library()
+   {
+   }
+
+   virtual void libraryEntryPoint() = 0;
 
 private:
    LibraryId mID;
