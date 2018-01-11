@@ -5,11 +5,27 @@
 namespace cafe::coreinit
 {
 
+struct StaticAlarmData;
+struct StaticAllocatorData;
+struct StaticAppIoData;
+struct StaticClipboardData;
+struct StaticDefaultHeapData;
+struct StaticMemHeapData;
+struct StaticSchedulerData;
+struct StaticSystemInfoData;
 struct StaticThreadData;
 
-struct StaticData
+struct LibraryStaticData
 {
-   virt_ptr<StaticThreadData> thread;
+   virt_ptr<StaticAlarmData> alarmData;
+   virt_ptr<StaticAllocatorData> allocatorData;
+   virt_ptr<StaticAppIoData> appIoData;
+   virt_ptr<StaticClipboardData> clipboardData;
+   virt_ptr<StaticDefaultHeapData> defaultHeapData;
+   virt_ptr<StaticMemHeapData> memHeapData;
+   virt_ptr<StaticSchedulerData> schedulerData;
+   virt_ptr<StaticSystemInfoData> systemInfoData;
+   virt_ptr<StaticThreadData> threadData;
 };
 
 class Library : public cafe::hle::Library
@@ -20,8 +36,43 @@ public:
    {
    }
 
-   static void RegisterExports();
    void libraryEntryPoint() override;
+
+   static virt_ptr<LibraryStaticData> getStaticData();
+
+protected:
+   void registerExports() override;
+   void registerAlarmExports();
+   void registerAllocatorExports();
+   void registerAtomicExports();
+   void registerAtomic64Exports();
+   void registerAppIoExports();
+   void registerClipboardExports();
+   void registerCoreFunctions();
+   void registerCoroutineFunctions();
+   void registerInterruptExports();
+   void registerMemoryFunctions();
+   void registerMemDefaultHeapFunctions();
+   void registerMemBlockHeapFunctions();
+   void registerMemExpHeapFunctions();
+   void registerMemFrameHeapFunctions();
+   void registerMemHeapFunctions();
+   void registerMemListFunctions();
+   void registerMemUnitHeapFunctions();
+   void registerMessageQueueFunctions();
+   void registerMutexFunctions();
+   void registerSpinLockFunctions();
+   void registerSystemInfoExports();
+   void registerTimeExports();
+
+   void initialiseAlarmStaticData();
+   void initialiseAllocatorStaticData();
+   void initialiseDefaultHeapStaticData();
+   void initialiseMemHeapStaticData();
+   void initialiseSchedulerStaticData();
+   void initialiseSystemInfoStaticData();
+
+   void initialiseClock();
 
 private:
    void CafeInit();
