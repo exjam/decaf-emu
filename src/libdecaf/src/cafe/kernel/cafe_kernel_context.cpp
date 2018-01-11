@@ -290,9 +290,11 @@ setCurrentContext(virt_ptr<Context> next)
 {
    auto coreId = cpu::this_core::id();
    auto current = sCurrentContext[coreId];
-
    copyContextFromCpu(current);
+
    copyContextToCpu(next);
+   sCurrentContext[coreId] = next;
+   return current;
 }
 
 void
