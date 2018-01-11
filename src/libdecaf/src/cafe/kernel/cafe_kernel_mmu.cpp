@@ -34,7 +34,7 @@ constexpr cpu::VirtualAddress operator "" _vaddr(unsigned long long int x)
 static std::map<PhysicalRegion, phys_addr_range>
 sPhysicalMemoryMap {
    // MEM1 - 32 MB
-   { PhysicalRegion::MEM1,                   { 0x00000000_paddr , 0x01FFFFFF_paddr } },
+   { PhysicalRegion::MEM1,                   phys_addr_range { 0x00000000_paddr , 0x01FFFFFF_paddr } },
 
    // LockedCache (not present on hardware) - 16 KB per core
    // Note we have to use the page size, 128kb, as that is the minimum we can map.
@@ -104,6 +104,20 @@ phys_addr_range
 getPhysicalAddressRange(PhysicalRegion region)
 {
    return sPhysicalMemoryMap.at(region);
+}
+
+phys_addr_range
+getAvailPhysAddrRange()
+{
+   // TODO: getAvailPhysAddrRange
+   return { phys_addr { 0 }, 0 };
+}
+
+phys_addr_range
+getDataPhysAddrRange()
+{
+   // TODO: getDataPhysAddrRange
+   return { phys_addr { 0 }, 0 };
 }
 
 // Memory mapped for kernel
@@ -209,6 +223,20 @@ getKernelVirtualAddressRange(VirtualRegion region)
    return virt_addr_range { mapping.start, mapping.end };
 }
 
+virt_addr_range
+getMapVirtAddrRange()
+{
+   // TODO: getMapVirtAddrRange
+   return { virt_addr { 0 }, 0 };
+}
+
+virt_addr_range
+getForegroundBucket()
+{
+   auto mapping = sForegroundAppMemoryMap.at(VirtualRegion::ForegroundBucket);
+   return virt_addr_range { mapping.start, mapping.end };
+}
+
 bool
 mapKernelVirtualMemory()
 {
@@ -229,6 +257,48 @@ mapGlobalVirtualMemory()
    }
 
    return success;
+}
+
+virt_addr
+allocVirtAddr(virt_addr address,
+              uint32_t size,
+              uint32_t alignment)
+{
+   // TODO: allocVirtAddr
+   return virt_addr { 0 };
+}
+
+BOOL
+freeVirtAddr(virt_addr address,
+             uint32_t size)
+{
+   // TODO: freeVirtAddr
+   return FALSE;
+}
+
+int
+queryVirtAddr(virt_addr address)
+{
+   // TODO: queryVirtAddr
+   return 0;
+}
+
+BOOL
+mapMemory(virt_addr virtAddress,
+          phys_addr physAddress,
+          uint32_t size,
+          int permission)
+{
+   // TODO: mapMemory
+   return FALSE;
+}
+
+BOOL
+unmapMemory(virt_addr virtAddress,
+            uint32_t size)
+{
+   // TODO: unmapMemory
+   return FALSE;
 }
 
 phys_addr
@@ -268,10 +338,10 @@ MemoryMap <0x10000000,          0,          0, 0x28305800> // app data
 MemoryMap <0xA0000000, 0x40000000,          0,     0x2000> // unk (wiiubru thinks mapping used by loader to load app code/data)
 MemoryMap <0xE0000000,  0x4000000, 0x14000000, 0x28204004> // foreground bucket
 MemoryMap <0xE8000000,  0x2000000, 0xD0000000, 0x78200004> // unk 32mb
-MemoryMap <0xEFE00000,    0x80000, 0x1B900000, 0x28109010> // loader data
+MemoryMap <0xEFE00000,    0x80000, 0x1B900000, 0x28109010> // kernel <-> loader IPC data
 MemoryMap <0xF4000000,  0x2000000,          0, 0x28204004> // MEM1
 MemoryMap <0xF6000000,   0x800000, 0x1B000000, 0x3CA08002> // loader bounce buffer, 8mb
-MemoryMap <0xF8000000,  0x3000000, 0x18000000, 0x2CA08002> // loader data
+MemoryMap <0xF8000000,  0x3000000, 0x18000000, 0x2CA08002> // loader shared read heap
 MemoryMap <0xFB000000,   0x800000, 0x1C800000, 0x28200002> // unknown 8mb
 MemoryMap <0xFC000000,    0xC0000,  0xC000000, 0x70100022> // registers
 MemoryMap <0xFC0C0000,   0x120000,  0xC0C0000, 0x70100022> // registers

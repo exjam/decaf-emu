@@ -68,14 +68,48 @@ enum class VirtualRegion
 phys_addr_range
 getPhysicalAddressRange(PhysicalRegion region);
 
+phys_addr_range
+getAvailPhysAddrRange();
+
+phys_addr_range
+getDataPhysAddrRange();
+
 virt_addr_range
 getKernelVirtualAddressRange(VirtualRegion region);
+
+virt_addr_range
+getMapVirtAddrRange();
+
+virt_addr_range
+getForegroundBucket();
 
 bool
 mapKernelVirtualMemory();
 
 bool
 mapGlobalVirtualMemory();
+
+virt_addr
+allocVirtAddr(virt_addr address,
+              uint32_t size,
+              uint32_t alignment);
+
+BOOL
+freeVirtAddr(virt_addr address,
+             uint32_t size);
+
+int
+queryVirtAddr(virt_addr address);
+
+BOOL
+mapMemory(virt_addr virtAddress,
+          phys_addr physAddress,
+          uint32_t size,
+          int permission);
+
+BOOL
+unmapMemory(virt_addr virtAddress,
+            uint32_t size);
 
 phys_addr
 virtualToPhysical(virt_addr pa);
