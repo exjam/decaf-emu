@@ -167,7 +167,7 @@ template<typename T>
 struct function_traits;
 
 template<typename ReturnType, typename... ArgTypes>
-struct function_traits<ReturnType(*)(ArgTypes...)>
+struct function_traits<ReturnType(ArgTypes...)>
 {
    static constexpr auto is_member_function = false;
    static constexpr auto num_args = sizeof...(ArgTypes);
@@ -188,6 +188,35 @@ struct function_traits<ReturnType(ObjectType::*)(ArgTypes...)>
    using param_info = typename get_param_infos_impl<4, 1, ArgTypes...>::type;
    using object_info = param_info_t<virt_ptr<ObjectType>, RegisterType::Gpr32, 3>;
 };
+
+template<typename ReturnType, typename... ArgTypes>
+struct function_traits<ReturnType(*)(ArgTypes...)> : function_traits<ReturnType(ArgTypes...)>
+{
+};
+
+template <typename T>
+struct function_traits<T&> : function_traits<T> { };
+
+template <typename T>
+struct function_traits<const T&> : function_traits<T> { };
+
+template <typename T>
+struct function_traits<volatile T&> : function_traits<T> { };
+
+template <typename T>
+struct function_traits<const volatile T&> : function_traits<T> { };
+
+template <typename T>
+struct function_traits<T&&> : function_traits<T> { };
+
+template <typename T>
+struct function_traits<const T&&> : function_traits<T> { };
+
+template <typename T>
+struct function_traits<volatile T&&> : function_traits<T> { };
+
+template <typename T>
+struct function_traits<const volatile T&&> : function_traits<T> { };
 
 } // namespace detail
 

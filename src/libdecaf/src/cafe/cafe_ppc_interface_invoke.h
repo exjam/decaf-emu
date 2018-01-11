@@ -51,14 +51,14 @@ template<typename HostFunctionType, typename FunctionTraitsType, std::size_t... 
 constexpr void
 invoke_host_impl(cpu::Core *core,
                  HostFunctionType &&func,
-                 FunctionTraitsType &&func_traits,
+                 FunctionTraitsType &&,
                  std::index_sequence<I...>)
 {
    auto param_info = FunctionTraitsType::param_info { };
    auto return_info = FunctionTraitsType::return_info { };
 
-   if constexpr (func_traits::is_member_function) {
-      auto obj = readParam(core, func_traits::object_info { });
+   if constexpr (FunctionTraitsType::is_member_function) {
+      auto obj = readParam(core, FunctionTraitsType::object_info { });
       writeParam(core,
                  return_info,
                  (obj.getRawPointer()->*func)(readParam(core, std::get<I>(param_info))...));
@@ -73,7 +73,7 @@ template<typename FunctionTraitsType, std::size_t... I, typename... ArgTypes>
 constexpr decltype(auto)
 invoke_guest_impl(cpu::Core *core,
                   cpu::VirtualAddress address,
-                  FunctionTraitsType &&func_traits,
+                  FunctionTraitsType &&,
                   std::index_sequence<I...>,
                   ArgTypes &&... args)
 {
@@ -130,11 +130,12 @@ invoke_guest_impl(cpu::Core *core,
 } // namespace detail
 
 // Invoke a host function from a guest context
-template<typename FnType>
+template<typename FunctionType>
 void
-invoke(cpu::Core *core, FnType fn)
+invoke(cpu::Core *core,
+       FunctionType fn)
 {
-   using func_traits = detail::function_traits<ReturnType(*)(ArgTypes...)>;
+   using func_traits = detail::function_traits<FunctionType>;
    invoke_host_impl(core,
                     fn,
                     func_traits { },
@@ -142,13 +143,13 @@ invoke(cpu::Core *core, FnType fn)
 }
 
 // Invoke a guest function from a host context
-template<typename ReturnType, typename... ArgTypes>
-ReturnType
+template<typename FunctionType, typename... ArgTypes>
+decltype(auto)
 invoke(cpu::Core *core,
-       cpu::FunctionPointer<cpu::VirtualAddress, ReturnType, ArgTypes...> fn,
+       cpu::FunctionPointer<cpu::VirtualAddress, FunctionType> fn,
        ArgTypes &&... args)
 {
-   using func_traits = detail::function_traits<ReturnType(*)(ArgTypes...)>;
+   using func_traits = detail::function_traits<FunctionType>;
    return invoke_guest_impl(core,
                             fn.getAddress(),
                             func_traits { },
