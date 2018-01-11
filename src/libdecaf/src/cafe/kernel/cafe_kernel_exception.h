@@ -49,13 +49,15 @@ using ExceptionHandler = std::function<void(virt_ptr<Context> interruptedContext
                                             virt_ptr<Context> exceptionContext)>;
 
 
-using KernelExceptionCallbackFn = std::function<void(virt_ptr<Context> interruptedContext,
-                                                     virt_ptr<Context> exceptionContext,
-                                                     RamProcessId pid)>;
+using KernelExceptionCallbackFn = std::function<void(uint32_t arg1,
+                                                     uint32_t arg2,
+                                                     uint32_t arg3,
+                                                     uint32_t arg4,
+                                                     uint32_t arg5,
+                                                     uint32_t arg6)>;
 
-using UserExceptionCallbackFn = virt_func_ptr<void,
-                                              virt_ptr<Context>,
-                                              virt_ptr<Context>>;
+using UserExceptionCallbackFn = virt_func_ptr<void(virt_ptr<Context> interruptedContext,
+                                                   virt_ptr<Context> interruptContext)>;
 
 void
 registerUserExceptionHandler(ExceptionType type,
@@ -71,8 +73,12 @@ registerKernelExceptionHandler(ExceptionType type,
 
 void
 queueKernelExceptionCallback(KernelExceptionCallbackFn callback,
-                             uint32_t argc,
-                             virt_ptr<void> argv);
+                             uint32_t arg1,
+                             uint32_t arg2,
+                             uint32_t arg3,
+                             uint32_t arg4,
+                             uint32_t arg5,
+                             uint32_t arg6);
 
 void
 queueUserExceptionCallback(UserExceptionCallbackFn callback,

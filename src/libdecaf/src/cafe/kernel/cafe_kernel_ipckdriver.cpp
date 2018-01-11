@@ -546,7 +546,11 @@ defensiveProcessIncomingMessagePointer(virt_ptr<IPCKDriver> driver,
 
 static void
 IPCKDriver_DispatchUserReplies(uint32_t pidx,
-                               virt_ptr<void> /*argv*/)
+                               uint32_t /*arg2*/,
+                               uint32_t /*arg3*/,
+                               uint32_t /*arg4*/,
+                               uint32_t /*arg5*/,
+                               uint32_t /*arg6*/)
 {
    virt_ptr<IPCKDriverRequestBlock> requestBlock;
    auto driver = IPCKDriver_GetInstance();
@@ -632,7 +636,7 @@ IPCKDriver_ProcessReply(virt_ptr<IPCKDriver> driver,
                              requestBlock);
 
          // Queue a kernel callback to handle the pending replies
-         queueKernelExceptionCallback(&IPCKDriver_DispatchUserReplies, pidx, nullptr);
+         queueKernelExceptionCallback(&IPCKDriver_DispatchUserReplies, pidx, 0, 0, 0, 0, 0);
       }
    }
 

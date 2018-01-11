@@ -35,8 +35,12 @@ struct UserExceptionCallback
 struct KernelExceptionCallback
 {
    KernelExceptionCallbackFn callback;
-   uint32_t argc;
-   virt_ptr<void> argv;
+   uint32_t arg1;
+   uint32_t arg2;
+   uint32_t arg3;
+   uint32_t arg4;
+   uint32_t arg5;
+   uint32_t arg6;
 };
 
 struct ProcessExceptionData
@@ -88,10 +92,14 @@ registerKernelExceptionHandler(ExceptionType type,
 
 void
 queueKernelExceptionCallback(KernelExceptionCallbackFn callback,
-                             uint32_t argc,
-                             virt_ptr<void> argv)
+                             uint32_t arg1,
+                             uint32_t arg2,
+                             uint32_t arg3,
+                             uint32_t arg4,
+                             uint32_t arg5,
+                             uint32_t arg6)
 {
-   sKernelPendingCallbacks.emplace(callback, argc, argv);
+   sKernelPendingCallbacks.emplace(callback, arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
 void
@@ -185,7 +193,12 @@ handleCpuInterrupt(cpu::Core *core,
    while (!sKernelPendingCallbacks.empty()) {
       auto callback = sKernelPendingCallbacks.front();
       sKernelPendingCallbacks.pop();
-      callback.callback(callback.argc, callback.argv);
+      callback.callback(callback.arg1,
+                        callback.arg2,
+                        callback.arg3,
+                        callback.arg4,
+                        callback.arg5,
+                        callback.arg6);
    }
 
    // Finally call any queued user exception callbacks
