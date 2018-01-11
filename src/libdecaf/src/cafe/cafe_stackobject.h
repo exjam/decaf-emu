@@ -50,4 +50,26 @@ public:
    }
 };
 
+template<typename Type, size_t NumElements>
+class StackArray : public StackObject<Type, NumElements>
+{
+public:
+   using StackObject::StackObject;
+
+   constexpr uint32_t size() const
+   {
+      return NumElements;
+   }
+
+   constexpr auto &operator[](std::size_t index)
+   {
+      return getRawPointer()[index];
+   }
+
+   constexpr const auto &operator[](std::size_t index) const
+   {
+      return getRawPointer()[index];
+   }
+};
+
 } // namespace cafe
