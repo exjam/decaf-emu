@@ -219,6 +219,9 @@ ios::Error
 IPCLDriver_Init();
 
 ios::Error
+IPCLDriver_Open();
+
+ios::Error
 IPCLDriver_GetInstance(virt_ptr<IPCLDriver> *outDriver);
 
 ios::Error

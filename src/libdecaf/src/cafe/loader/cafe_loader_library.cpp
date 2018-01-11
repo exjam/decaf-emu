@@ -165,7 +165,7 @@ LOADER_Init(uint32_t r3, uint32_t num_codearea_heap_blocks, uint32_t maxCodeSize
    gDataAreaSize = 0u;
    gDataAreaAllocations = 0u;
    /*
-   TINYHEAP_Setup(0x10000000 - align_up(gEFE01008, 64),
+   TINYHEAP_Setup(gEFE01004 = 0x10000000 - align_up(gEFE01008, 64),
                   gEFE01008,
                   0x10000000 - align_up(gEFE01008, 64) - gEFE01010,
                   gEFE01010);

@@ -1,7 +1,7 @@
 #pragma once
 #include <libcpu/be2_struct.h>
 
-namespace cafe::loader
+namespace cafe::loader::rpl
 {
 
 enum e_machine
@@ -268,6 +268,19 @@ CHECK_OFFSET(Header, 0x30, shnum);
 CHECK_OFFSET(Header, 0x32, shstrndx);
 CHECK_SIZE(Header, 0x34);
 
+struct ProgramHeader
+{
+   be2_val<uint32_t> type;
+   be2_val<uint32_t> offset;
+   be2_val<uint32_t> vaddr;
+   be2_val<uint32_t> paddr;
+   be2_val<uint32_t> filesz;
+   be2_val<uint32_t> memsz;
+   be2_val<uint32_t> flags;
+   be2_val<uint32_t> align;
+};
+CHECK_SIZE(ProgramHeader, 0x20);
+
 struct SectionHeader
 {
    //! Section name (index into string table)
@@ -360,6 +373,7 @@ CHECK_SIZE(DeflatedHeader, 0x04);
 
 struct RPLFileInfo_v3_0
 {
+   static constexpr auto Version = 0xCAFE0300u;
    be2_val<uint32_t> version;
    be2_val<uint32_t> textSize;
    be2_val<uint32_t> textAlign;
@@ -393,6 +407,7 @@ CHECK_SIZE(RPLFileInfo_v3_0, 0x40);
 
 struct RPLFileInfo_v4_1
 {
+   static constexpr auto Version = 0xCAFE0401u;
    be2_val<uint32_t> version;
    be2_val<uint32_t> textSize;
    be2_val<uint32_t> textAlign;
@@ -430,6 +445,7 @@ CHECK_SIZE(RPLFileInfo_v4_1, 0x40);
 
 struct RPLFileInfo_v4_2
 {
+   static constexpr auto Version = 0xCAFE0402u;
    be2_val<uint32_t> version;
    be2_val<uint32_t> textSize;
    be2_val<uint32_t> textAlign;
@@ -452,7 +468,7 @@ struct RPLFileInfo_v4_2
    be2_val<uint32_t> fileInfoPad;
    be2_val<uint32_t> cafeSdkVersion;
    be2_val<uint32_t> cafeSdkRevision;
-   be2_val<uint16_t> tlsModuleIndex;
+   be2_val<int16_t> tlsModuleIndex;
    be2_val<uint16_t> tlsAlignShift;
    be2_val<uint32_t> runtimeFileInfoSize;
 };
@@ -485,4 +501,4 @@ CHECK_SIZE(RPLFileInfo_v4_2, 0x60);
 
 #pragma pack(pop)
 
-} // namespace cafe::loader
+} // namespace cafe::loader::rpl

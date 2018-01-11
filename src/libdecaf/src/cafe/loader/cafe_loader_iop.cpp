@@ -152,11 +152,40 @@ LiPollForCompletion()
    return IPCLDriver_ProcessReply(driver, request);
 }
 
+void
+LiCheckAndHandleInterrupts()
+{
+}
+
+int32_t
+LiCheckInterrupts()
+{
+   return 0;
+}
+
 static ios::Error
 LiWaitAsyncReply(virt_ptr<LiLoadReply> reply)
 {
    while (!reply->done) {
       LiPollForCompletion();
+   }
+
+   reply->done = FALSE;
+   reply->pending = FALSE;
+   return reply->error;
+}
+
+static ios::Error
+LiWaitAsyncReplyWithInterrupts(virt_ptr<LiLoadReply> reply)
+{
+   while (!reply->done) {
+      LiPollForCompletion();
+
+      auto interrupts = LiCheckInterrupts();
+      if (interrupts) {
+         // Handle the interrupt
+         // Loader_SysCallRPLLoaderResumeContext
+      }
    }
 
    reply->done = FALSE;
@@ -181,7 +210,15 @@ LiWaitIopComplete(uint32_t *outBytesRead)
 ios::Error
 LiWaitIopCompleteWithInterrupts(uint32_t *outBytesRead)
 {
-   return ios::Error::OK;
+   auto error = LiWaitAsyncReplyWithInterrupts(virt_addrof(sIopData->loadReply));
+   if (error < 0) {
+      *outBytesRead = 0;
+   } else {
+      *outBytesRead = static_cast<uint32_t>(error);
+      error = ios::Error::OK;
+   }
+
+   return error;
 }
 
 void

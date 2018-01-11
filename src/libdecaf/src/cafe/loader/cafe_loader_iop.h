@@ -26,6 +26,9 @@ ios::Error
 LiWaitIopCompleteWithInterrupts(uint32_t *outBytesRead);
 
 void
+LiCheckAndHandleInterrupts();
+
+void
 initialiseStaticIopData();
 
 } // namespace cafe::loader::internal
