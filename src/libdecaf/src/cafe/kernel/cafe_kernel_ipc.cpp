@@ -115,9 +115,9 @@ IOS_OpenAsync(RamProcessId clientProcessId,
    }
 
    requestBlock->request->request.args.open.name = virtualToPhysical(device);
-   requestBlock->request->request.args.open.nameLen = strlen(device.getRawPointer());
+   requestBlock->request->request.args.open.nameLen = static_cast<uint32_t>(strlen(device.getRawPointer()));
    requestBlock->request->request.args.open.mode = mode;
-   requestBlock->request->request.args.open.caps = 0;
+   requestBlock->request->request.args.open.caps = 0ull;
 
    error = IPCKDriver_SubmitRequest(driver, requestBlock);
    if (error < ios::Error::OK) {

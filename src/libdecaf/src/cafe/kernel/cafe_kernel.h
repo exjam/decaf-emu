@@ -17,7 +17,7 @@ template<typename Type>
 inline virt_ptr<Type>
 allocStatic()
 {
-   return virt_cast<Type>(allocStatic(sizeof(Type), alignof(Type)));
+   return virt_cast<Type *>(allocStatic(sizeof(Type), alignof(Type)));
 }
 
 } // namespace internal

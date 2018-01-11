@@ -34,7 +34,7 @@ enum class UniqueProcessId : int32_t
    EShop = 10,
    FLV = 11,
    DownloadManager = 12,
-   Game = 15
+   Game = 15,
 };
 
 enum class KernelProcessId : int32_t

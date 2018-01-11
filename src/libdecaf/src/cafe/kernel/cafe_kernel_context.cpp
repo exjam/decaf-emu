@@ -39,7 +39,7 @@ sContextData;
 static void
 checkDeadContext();
 
-using ContextEntryPoint = virt_func_ptr<void>;
+using ContextEntryPoint = virt_func_ptr<void()>;
 
 void
 copyContextFromCpu(virt_ptr<Context> context)
