@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <libcpu/be2_struct.h>
 
 namespace cpu
 {
