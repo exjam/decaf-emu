@@ -64,6 +64,7 @@ protected:
    void registerMemUnitHeapFunctions();
    void registerMessageQueueFunctions();
    void registerMutexFunctions();
+   void registerRendezvousExports();
    void registerSpinLockFunctions();
    void registerSystemInfoExports();
    void registerTimeExports();
