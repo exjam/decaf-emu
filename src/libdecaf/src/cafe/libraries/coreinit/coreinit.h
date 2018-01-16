@@ -53,6 +53,7 @@ protected:
    void registerCoreFunctions();
    void registerCoroutineFunctions();
    void registerEventFunctions();
+   void registerFiberExports();
    void registerInterruptExports();
    void registerMemoryFunctions();
    void registerMemDefaultHeapFunctions();
