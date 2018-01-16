@@ -4,9 +4,22 @@
 #include "coreinit_memheap.h"
 #include "coreinit_scheduler.h"
 #include "coreinit_time.h"
+#include "cafe/cafe_stackobject.h"
 
 namespace cafe::coreinit
 {
+
+struct StaticEventData
+{
+   be2_val<AlarmCallbackFn> eventAlarmHandler;
+};
+
+static virt_ptr<StaticEventData>
+getEventData()
+{
+   return Library::getStaticData()->eventData;
+}
+
 
 /**
  * Initialises an event structure.
@@ -234,22 +247,19 @@ OSWaitEvent(virt_ptr<OSEvent> event)
    internal::unlockScheduler();
 }
 
-
-static AlarmCallback
-sEventAlarmHandler = nullptr;
-
 struct EventAlarmData
 {
    virt_ptr<OSEvent> event;
-   OSThread *thread;
+   virt_ptr<OSThread> thread;
    BOOL timeout;
 };
 
 static void
-EventAlarmHandler(OSAlarm *alarm, OSContext *context)
+EventAlarmHandler(virt_ptr<OSAlarm> alarm,
+                  virt_ptr<OSContext> context)
 {
    // Wakeup the thread waiting on this alarm
-   auto data = reinterpret_cast<EventAlarmData*>(OSGetAlarmUserData(alarm));
+   auto data = virt_cast<EventAlarmData *>(OSGetAlarmUserData(alarm));
    data->timeout = TRUE;
 
    // Remove this alarm from the thread
@@ -271,8 +281,9 @@ BOOL
 OSWaitEventWithTimeout(virt_ptr<OSEvent> event,
                        OSTimeNanoseconds timeout)
 {
-   ppcutils::StackObject<EventAlarmData> data;
-   ppcutils::StackObject<OSAlarm> alarm;
+   StackObject<EventAlarmData> data;
+   StackObject<OSAlarm> alarm;
+   auto eventData = getEventData();
 
    internal::lockScheduler();
 
@@ -296,7 +307,7 @@ OSWaitEventWithTimeout(virt_ptr<OSEvent> event,
    // Create an alarm to trigger timeout
    auto timeoutTicks = internal::nsToTicks(timeout);
    OSCreateAlarm(alarm);
-   internal::setAlarmInternal(alarm, timeoutTicks, sEventAlarmHandler, data);
+   internal::setAlarmInternal(alarm, timeoutTicks, eventData->eventAlarmHandler, data);
 
    // Set waitEventTimeoutAlarm so we can cancel it when event is signalled
    thread->waitEventTimeoutAlarm = alarm;
@@ -326,22 +337,26 @@ OSWaitEventWithTimeout(virt_ptr<OSEvent> event,
 }
 
 void
-Module::initialiseEvent()
+Library::initialiseEventStaticData()
 {
+   // TODO: Allocate from static memory frame allocator
+   auto eventData = virt_ptr<StaticEventData> { nullptr };
+   Library::getStaticData()->eventData = eventData;
+   eventData->eventAlarmHandler = GetInternalFunctionAddress(EventAlarmHandler);
 }
 
 void
-Module::registerEventFunctions()
+Library::registerEventFunctions()
 {
-   RegisterKernelFunction(OSInitEvent);
-   RegisterKernelFunction(OSInitEventEx);
-   RegisterKernelFunction(OSSignalEvent);
-   RegisterKernelFunction(OSSignalEventAll);
-   RegisterKernelFunction(OSResetEvent);
-   RegisterKernelFunction(OSWaitEvent);
-   RegisterKernelFunction(OSWaitEventWithTimeout);
+   RegisterFunctionExport(OSInitEvent);
+   RegisterFunctionExport(OSInitEventEx);
+   RegisterFunctionExport(OSSignalEvent);
+   RegisterFunctionExport(OSSignalEventAll);
+   RegisterFunctionExport(OSResetEvent);
+   RegisterFunctionExport(OSWaitEvent);
+   RegisterFunctionExport(OSWaitEventWithTimeout);
 
-   RegisterInternalFunction(EventAlarmHandler, sEventAlarmHandler);
+   RegisterFunctionInternal(EventAlarmHandler);
 }
 
 } // namespace cafe::coreinit

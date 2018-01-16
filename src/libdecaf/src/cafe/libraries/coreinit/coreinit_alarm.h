@@ -18,7 +18,8 @@ namespace cafe::coreinit
 
 struct OSAlarm;
 struct OSContext;
-using AlarmCallbackFn = virt_func_ptr<void(virt_ptr<OSAlarm> alarm, virt_ptr<OSContext> context)>;
+using AlarmCallbackFn = virt_func_ptr<void(virt_ptr<OSAlarm> alarm,
+                                           virt_ptr<OSContext> context)>;
 
 struct OSAlarmQueue
 {

@@ -10,6 +10,7 @@ struct StaticAllocatorData;
 struct StaticAppIoData;
 struct StaticClipboardData;
 struct StaticDefaultHeapData;
+struct StaticEventData;
 struct StaticMemHeapData;
 struct StaticSchedulerData;
 struct StaticSystemInfoData;
@@ -22,6 +23,7 @@ struct LibraryStaticData
    virt_ptr<StaticAppIoData> appIoData;
    virt_ptr<StaticClipboardData> clipboardData;
    virt_ptr<StaticDefaultHeapData> defaultHeapData;
+   virt_ptr<StaticEventData> eventData;
    virt_ptr<StaticMemHeapData> memHeapData;
    virt_ptr<StaticSchedulerData> schedulerData;
    virt_ptr<StaticSystemInfoData> systemInfoData;
@@ -50,6 +52,7 @@ protected:
    void registerClipboardExports();
    void registerCoreFunctions();
    void registerCoroutineFunctions();
+   void registerEventFunctions();
    void registerInterruptExports();
    void registerMemoryFunctions();
    void registerMemDefaultHeapFunctions();
@@ -68,6 +71,7 @@ protected:
    void initialiseAlarmStaticData();
    void initialiseAllocatorStaticData();
    void initialiseDefaultHeapStaticData();
+   void initialiseEventStaticData();
    void initialiseMemHeapStaticData();
    void initialiseSchedulerStaticData();
    void initialiseSystemInfoStaticData();
