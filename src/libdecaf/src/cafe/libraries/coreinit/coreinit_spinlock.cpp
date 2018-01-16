@@ -138,7 +138,7 @@ OSTryAcquireSpinLock(virt_ptr<OSSpinLock> spinlock)
 
 BOOL
 OSTryAcquireSpinLockWithTimeout(virt_ptr<OSSpinLock> spinlock,
-                                OSTime timeoutNS)
+                                OSTimeNanoseconds timeoutNS)
 {
    auto timeoutTicks = internal::nsToTicks(timeoutNS);
    OSTestThreadCancel();
@@ -214,7 +214,7 @@ OSUninterruptibleSpinLock_TryAcquire(virt_ptr<OSSpinLock> spinlock)
  */
 BOOL
 OSUninterruptibleSpinLock_TryAcquireWithTimeout(virt_ptr<OSSpinLock> spinlock,
-                                                OSTime timeoutNS)
+                                                OSTimeNanoseconds timeoutNS)
 {
    auto timeoutTicks = internal::nsToTicks(timeoutNS);
 

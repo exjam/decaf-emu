@@ -48,6 +48,11 @@ using OSTick = int32_t;
 //! OSTime is ticks since epoch
 using OSTime = int64_t;
 
+using OSTimeSeconds = int64_t;
+using OSTimeMilliseconds = int64_t;
+using OSTimeMicroseconds = int64_t;
+using OSTimeNanoseconds = int64_t;
+
 OSTime
 OSGetTime();
 
@@ -73,13 +78,13 @@ namespace internal
 {
 
 OSTime
-msToTicks(OSTime milliseconds);
+msToTicks(OSTimeMilliseconds milliseconds);
 
 OSTime
-usToTicks(OSTime microseconds);
+usToTicks(OSTimeMicroseconds microseconds);
 
 OSTime
-nsToTicks(OSTime nanoseconds);
+nsToTicks(OSTimeNanoseconds nanoseconds);
 
 OSTime
 getBaseTime();

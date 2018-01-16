@@ -75,7 +75,7 @@ OSResetEvent(virt_ptr<OSEvent> event);
 
 BOOL
 OSWaitEventWithTimeout(virt_ptr<OSEvent> event,
-                       OSTime timeoutNS);
+                       OSTimeNanoseconds timeout);
 
 /** @} */
 

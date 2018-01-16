@@ -269,7 +269,7 @@ EventAlarmHandler(OSAlarm *alarm, OSContext *context)
  */
 BOOL
 OSWaitEventWithTimeout(virt_ptr<OSEvent> event,
-                       OSTime timeoutNS)
+                       OSTimeNanoseconds timeout)
 {
    ppcutils::StackObject<EventAlarmData> data;
    ppcutils::StackObject<OSAlarm> alarm;
@@ -294,7 +294,7 @@ OSWaitEventWithTimeout(virt_ptr<OSEvent> event,
    data->timeout = FALSE;
 
    // Create an alarm to trigger timeout
-   auto timeoutTicks = internal::nsToTicks(timeoutNS);
+   auto timeoutTicks = internal::nsToTicks(timeout);
    OSCreateAlarm(alarm);
    internal::setAlarmInternal(alarm, timeoutTicks, sEventAlarmHandler, data);
 

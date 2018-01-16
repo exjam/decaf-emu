@@ -49,7 +49,7 @@ OSTryAcquireSpinLock(virt_ptr<OSSpinLock> spinlock);
 
 BOOL
 OSTryAcquireSpinLockWithTimeout(virt_ptr<OSSpinLock> spinlock,
-                                OSTime timeoutNS);
+                                OSTimeNanoseconds timeoutNS);
 
 BOOL
 OSReleaseSpinLock(virt_ptr<OSSpinLock> spinlock);
@@ -62,7 +62,7 @@ OSUninterruptibleSpinLock_TryAcquire(virt_ptr<OSSpinLock> spinlock);
 
 BOOL
 OSUninterruptibleSpinLock_TryAcquireWithTimeout(virt_ptr<OSSpinLock> spinlock,
-                                                OSTime timeoutNS);
+                                                OSTimeNanoseconds timeoutNS);
 
 BOOL
 OSUninterruptibleSpinLock_Release(virt_ptr<OSSpinLock> spinlock);
