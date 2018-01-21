@@ -65,6 +65,7 @@ protected:
    void registerDeviceFunctions();
    void registerDriverFunctions();
    void registerEventFunctions();
+   void registerFastMutexFunctions();
    void registerFiberExports();
    void registerInterruptExports();
    void registerIosFunctions();
