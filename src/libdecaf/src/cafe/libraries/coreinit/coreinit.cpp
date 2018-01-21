@@ -14,7 +14,7 @@ Library::registerExports()
 {
    registerAllocatorExports();
    registerAtomicExports();
-   registerMemlistFunctions();
+   registerMemListFunctions();
    registerSystemInfoExports();
    registerTimeExports();
 }

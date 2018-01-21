@@ -8,9 +8,11 @@ namespace cafe::coreinit
 struct StaticAlarmData;
 struct StaticAllocatorData;
 struct StaticAppIoData;
+struct StaticBspData;
 struct StaticClipboardData;
 struct StaticDefaultHeapData;
 struct StaticEventData;
+struct StaticIpcDriverData;
 struct StaticMemHeapData;
 struct StaticSchedulerData;
 struct StaticSystemInfoData;
@@ -21,9 +23,11 @@ struct LibraryStaticData
    virt_ptr<StaticAlarmData> alarmData;
    virt_ptr<StaticAllocatorData> allocatorData;
    virt_ptr<StaticAppIoData> appIoData;
+   virt_ptr<StaticBspData> bspData;
    virt_ptr<StaticClipboardData> clipboardData;
    virt_ptr<StaticDefaultHeapData> defaultHeapData;
    virt_ptr<StaticEventData> eventData;
+   virt_ptr<StaticIpcDriverData> ipcDriverData;
    virt_ptr<StaticMemHeapData> memHeapData;
    virt_ptr<StaticSchedulerData> schedulerData;
    virt_ptr<StaticSystemInfoData> systemInfoData;
@@ -55,6 +59,8 @@ protected:
    void registerEventFunctions();
    void registerFiberExports();
    void registerInterruptExports();
+   void registerIosFunctions();
+   void registerIpcDriverFunctions();
    void registerMemoryFunctions();
    void registerMemDefaultHeapFunctions();
    void registerMemBlockHeapFunctions();
@@ -68,6 +74,7 @@ protected:
    void registerRendezvousExports();
    void registerSpinLockFunctions();
    void registerSystemInfoExports();
+   void registerTaskQueueExports();
    void registerTimeExports();
 
    void initialiseAlarmStaticData();
