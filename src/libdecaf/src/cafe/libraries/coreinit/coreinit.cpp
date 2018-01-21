@@ -9,6 +9,14 @@ Library::getStaticData()
    return nullptr;
 }
 
+virt_ptr<void>
+Library::allocStaticData(uint32_t size,
+                         uint32_t align)
+{
+   // TODO: Library::allocStaticData
+   return nullptr;
+}
+
 void
 Library::registerExports()
 {

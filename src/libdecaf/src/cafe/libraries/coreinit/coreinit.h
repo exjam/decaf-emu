@@ -1,6 +1,7 @@
 #pragma once
 #include "cafe/libraries/cafe_hle_library.h"
 #include <libcpu/be2_struct.h>
+#include <memory>
 
 namespace cafe::coreinit
 {
@@ -79,6 +80,7 @@ protected:
 
    void initialiseAlarmStaticData();
    void initialiseAllocatorStaticData();
+   void initialiseAppIoStaticData();
    void initialiseDefaultHeapStaticData();
    void initialiseEventStaticData();
    void initialiseMemHeapStaticData();
@@ -86,6 +88,19 @@ protected:
    void initialiseSystemInfoStaticData();
 
    void initialiseClock();
+
+   virt_ptr<void>
+   allocStaticData(uint32_t size, uint32_t align);
+
+   template<typename Type>
+   virt_ptr<Type>
+   allocStaticData()
+   {
+      auto buffer = allocStaticData(sizeof(Type), alignof(Type));
+      auto data = virt_cast<Type>(buffer);
+      std::uninitialized_default_construct_n(data.getRawPointer(), 1);
+      return data;
+   }
 
 private:
    void CafeInit();
