@@ -72,4 +72,13 @@ public:
    }
 };
 
+template<std::size_t N>
+inline auto
+make_stack_string(const char (&hostStr)[N])
+{
+   StackArray<const char, N + 1> guestStr;
+   std::strcpy(guestStr.getRawPointer(), hostStr);
+   return std::move(guestStr);
+}
+
 } // namespace cafe
