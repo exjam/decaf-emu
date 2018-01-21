@@ -12,6 +12,7 @@ struct StaticAppIoData;
 struct StaticBspData;
 struct StaticClipboardData;
 struct StaticDefaultHeapData;
+struct StaticDeviceData;
 struct StaticEventData;
 struct StaticIpcDriverData;
 struct StaticMemHeapData;
@@ -27,6 +28,7 @@ struct LibraryStaticData
    virt_ptr<StaticBspData> bspData;
    virt_ptr<StaticClipboardData> clipboardData;
    virt_ptr<StaticDefaultHeapData> defaultHeapData;
+   virt_ptr<StaticDeviceData> deviceData;
    virt_ptr<StaticEventData> eventData;
    virt_ptr<StaticIpcDriverData> ipcDriverData;
    virt_ptr<StaticMemHeapData> memHeapData;
@@ -58,6 +60,7 @@ protected:
    void registerClipboardExports();
    void registerCoreFunctions();
    void registerCoroutineFunctions();
+   void registerDeviceFunctions();
    void registerEventFunctions();
    void registerFiberExports();
    void registerInterruptExports();
