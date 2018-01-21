@@ -63,8 +63,14 @@ BOOL
 OSUnmapMemory(virt_addr virtAddress,
               uint32_t size);
 
-void
-OSMemoryBarrier();
+phys_addr
+OSEffectiveToPhysical(virt_addr address);
+
+virt_addr
+OSPhysicalToEffectiveCached(phys_addr address);
+
+virt_addr
+OSPhysicalToEffectiveUncached(phys_addr address);
 
 virt_ptr<void>
 memcpy(virt_ptr<void> dst,

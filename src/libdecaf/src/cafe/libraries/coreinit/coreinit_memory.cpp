@@ -84,14 +84,14 @@ GetFgMemPtr(ForegroundArea area)
    };
 
    static constexpr std::array<FgMemInfo, 8> fgMemInfo = {
-      { ForegroundArea::Application,           0, 0x2800000 },
-      { ForegroundArea::Unknown7,      0x2800000,  0x400000 },
-      { ForegroundArea::Unknown1,      0x2C00000,  0x900000 },
-      { ForegroundArea::Unknown2,      0x3500000,  0x3C0000 },
-      { ForegroundArea::Unknown3,      0x38C0000,  0x1C0000 },
-      { ForegroundArea::Unknown4,      0x3A80000,  0x3C0000 },
-      { ForegroundArea::Unknown5,      0x3E40000,  0x1BF000 },
-      { ForegroundArea::Unknown6,      0x3FFF000,    0x1000 },
+      FgMemInfo { ForegroundArea::Application,           0, 0x2800000 },
+      FgMemInfo { ForegroundArea::Unknown7,      0x2800000,  0x400000 },
+      FgMemInfo { ForegroundArea::Unknown1,      0x2C00000,  0x900000 },
+      FgMemInfo { ForegroundArea::Unknown2,      0x3500000,  0x3C0000 },
+      FgMemInfo { ForegroundArea::Unknown3,      0x38C0000,  0x1C0000 },
+      FgMemInfo { ForegroundArea::Unknown4,      0x3A80000,  0x3C0000 },
+      FgMemInfo { ForegroundArea::Unknown5,      0x3E40000,  0x1BF000 },
+      FgMemInfo { ForegroundArea::Unknown6,      0x3FFF000,    0x1000 },
    };
 
    auto memoryData = getMemoryData();
@@ -248,12 +248,40 @@ OSUnmapMemory(virt_addr virtAddress,
    return kernel::unmapMemory(virtAddress, size);
 }
 
-void
-OSMemoryBarrier()
+/**
+ * Translates a virtual (effective) address to a physical address.
+ */
+phys_addr
+OSEffectiveToPhysical(virt_addr address)
 {
-   std::atomic_thread_fence(std::memory_order_seq_cst);
+   // TODO: OSEffectiveToPhysical
+   return phys_addr { 0 };
 }
 
+/**
+ * Translates a physical address to a virtual (effective) address.
+ */
+virt_addr
+OSPhysicalToEffectiveCached(phys_addr address)
+{
+   // TODO: OSPhysicalToEffectiveCached
+   return virt_addr { 0 };
+}
+
+/**
+ * Translates a physical address to a virtual (effective) address.
+ */
+virt_addr
+OSPhysicalToEffectiveUncached(phys_addr address)
+{
+   // TODO: OSPhysicalToEffectiveUncached
+   return virt_addr { 0 };
+}
+
+
+/**
+ * memcpy for virtual memory.
+ */
 virt_ptr<void>
 memcpy(virt_ptr<void> dst,
        virt_ptr<const void> src,
@@ -263,6 +291,10 @@ memcpy(virt_ptr<void> dst,
    return dst;
 }
 
+
+/**
+ * memmove for virtual memory.
+ */
 virt_ptr<void>
 memmove(virt_ptr<void> dst,
         virt_ptr<const void> src,
@@ -272,6 +304,10 @@ memmove(virt_ptr<void> dst,
    return dst;
 }
 
+
+/**
+ * memset for virtual memory.
+ */
 virt_ptr<void>
 memset(virt_ptr<void> dst,
        int value,
@@ -297,7 +333,9 @@ Library::registerMemoryFunctions()
    RegisterFunctionExport(OSQueryVirtAddr);
    RegisterFunctionExport(OSMapMemory);
    RegisterFunctionExport(OSUnmapMemory);
-   RegisterFunctionExport(OSMemoryBarrier);
+   RegisterFunctionExport(OSEffectiveToPhysical);
+   RegisterFunctionExport(OSPhysicalToEffectiveCached);
+   RegisterFunctionExport(OSPhysicalToEffectiveUncached);
    RegisterFunctionExport(memcpy);
    RegisterFunctionExport(memmove);
    RegisterFunctionExport(memset);
