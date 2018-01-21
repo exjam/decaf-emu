@@ -69,6 +69,7 @@ protected:
    void registerFiberExports();
    void registerInterruptExports();
    void registerIosFunctions();
+   void registerIpcBufPoolFunctions();
    void registerIpcDriverFunctions();
    void registerMemoryFunctions();
    void registerMemDefaultHeapFunctions();
