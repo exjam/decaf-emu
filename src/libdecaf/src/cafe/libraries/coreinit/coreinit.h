@@ -54,6 +54,7 @@ protected:
    void registerAtomicExports();
    void registerAtomic64Exports();
    void registerAppIoExports();
+   void registerCacheFunctions();
    void registerClipboardExports();
    void registerCoreFunctions();
    void registerCoroutineFunctions();
