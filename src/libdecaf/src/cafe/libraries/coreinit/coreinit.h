@@ -15,6 +15,7 @@ struct StaticDefaultHeapData;
 struct StaticDeviceData;
 struct StaticDriverData;
 struct StaticEventData;
+struct StaticImData;
 struct StaticIpcDriverData;
 struct StaticMemHeapData;
 struct StaticSchedulerData;
@@ -32,6 +33,7 @@ struct LibraryStaticData
    virt_ptr<StaticDeviceData> deviceData;
    virt_ptr<StaticDriverData> driverData;
    virt_ptr<StaticEventData> eventData;
+   virt_ptr<StaticImData> imData;
    virt_ptr<StaticIpcDriverData> ipcDriverData;
    virt_ptr<StaticMemHeapData> memHeapData;
    virt_ptr<StaticSchedulerData> schedulerData;
@@ -68,6 +70,7 @@ protected:
    void registerEventFunctions();
    void registerFastMutexFunctions();
    void registerFiberExports();
+   void registerImExports();
    void registerInterruptExports();
    void registerIosFunctions();
    void registerIpcBufPoolFunctions();
@@ -98,6 +101,7 @@ protected:
    void initialiseDeviceStaticData();
    void initialiseDriverStaticData();
    void initialiseEventStaticData();
+   void initialiseImStaticData();
    void initialiseIpcDriverStaticData();
    void initialiseMemHeapStaticData();
    void initialiseSchedulerStaticData();
