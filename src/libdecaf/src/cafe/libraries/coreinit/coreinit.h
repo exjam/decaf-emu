@@ -88,6 +88,7 @@ protected:
    void registerFsCmdBlockFunctions();
    void registerFsDriverFunctions();
    void registerFsStatemachineFunctions();
+   void registerFsaFunctions();
    void registerImExports();
    void registerInterruptExports();
    void registerIosFunctions();
