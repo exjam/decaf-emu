@@ -20,6 +20,7 @@ struct StaticFsClientData;
 struct StaticFsCmdData;
 struct StaticFsCmdBlockData;
 struct StaticFsDriverData;
+struct StaticFsStateMachineData;
 struct StaticImData;
 struct StaticIpcDriverData;
 struct StaticMemHeapData;
@@ -43,6 +44,7 @@ struct LibraryStaticData
    virt_ptr<StaticFsCmdData> fsCmdData;
    virt_ptr<StaticFsCmdBlockData> fsCmdBlockData;
    virt_ptr<StaticFsDriverData> fsDriverData;
+   virt_ptr<StaticFsStateMachineData> fsStateMachineData;
    virt_ptr<StaticImData> imData;
    virt_ptr<StaticIpcDriverData> ipcDriverData;
    virt_ptr<StaticMemHeapData> memHeapData;
@@ -85,6 +87,7 @@ protected:
    void registerFsCmdFunctions();
    void registerFsCmdBlockFunctions();
    void registerFsDriverFunctions();
+   void registerFsStatemachineFunctions();
    void registerImExports();
    void registerInterruptExports();
    void registerIosFunctions();
@@ -121,6 +124,7 @@ protected:
    void initialiseFsCmdStaticData();
    void initialiseFsCmdBlockStaticData();
    void initialiseFsDriverStaticData();
+   void initialiseFsStateMachineStaticData();
    void initialiseImStaticData();
    void initialiseIpcDriverStaticData();
    void initialiseMemHeapStaticData();
