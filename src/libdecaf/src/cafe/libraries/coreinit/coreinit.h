@@ -89,6 +89,7 @@ protected:
    void registerFsDriverFunctions();
    void registerFsStatemachineFunctions();
    void registerFsaFunctions();
+   void registerFsaShimFunctions();
    void registerImExports();
    void registerInterruptExports();
    void registerIosFunctions();
