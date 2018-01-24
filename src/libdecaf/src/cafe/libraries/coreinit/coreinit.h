@@ -58,6 +58,7 @@ protected:
    void registerAtomicExports();
    void registerAtomic64Exports();
    void registerAppIoExports();
+   void registerBspFunctions();
    void registerCacheFunctions();
    void registerClipboardExports();
    void registerCoreFunctions();
@@ -82,6 +83,7 @@ protected:
    void registerMessageQueueFunctions();
    void registerMutexFunctions();
    void registerRendezvousExports();
+   void registerSemaphoreFunctions();
    void registerSpinLockFunctions();
    void registerSystemInfoExports();
    void registerTaskQueueExports();
@@ -90,8 +92,13 @@ protected:
    void initialiseAlarmStaticData();
    void initialiseAllocatorStaticData();
    void initialiseAppIoStaticData();
+   void initialiseBspStaticData();
+   void initialiseClipboardStaticData();
    void initialiseDefaultHeapStaticData();
+   void initialiseDeviceStaticData();
+   void initialiseDriverStaticData();
    void initialiseEventStaticData();
+   void initialiseIpcDriverStaticData();
    void initialiseMemHeapStaticData();
    void initialiseSchedulerStaticData();
    void initialiseSystemInfoStaticData();

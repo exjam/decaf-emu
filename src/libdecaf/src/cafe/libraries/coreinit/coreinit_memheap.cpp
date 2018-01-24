@@ -187,23 +187,9 @@ MEMSetFillValForHeap(MEMHeapFillType type,
 }
 
 void
-Library::registerMemHeapFunctions()
-{
-   RegisterFunctionExport(MEMGetBaseHeapHandle);
-   RegisterFunctionExport(MEMSetBaseHeapHandle);
-   RegisterFunctionExport(MEMCreateUserHeapHandle);
-   RegisterFunctionExport(MEMGetArena);
-   RegisterFunctionExport(MEMFindContainHeap);
-   RegisterFunctionExport(MEMDumpHeap);
-   RegisterFunctionExport(MEMGetFillValForHeap);
-   RegisterFunctionExport(MEMSetFillValForHeap);
-}
-
-void
 Library::initialiseMemHeapStaticData()
 {
-   // TODO: Alloc static data
-   auto memHeapData = nullptr;
+   auto memHeapData = allocStaticData<StaticMemHeapData>();
    Library::getStaticData()->memHeapData = memHeapData;
 
    OSInitSpinLock(virt_addrof(memHeapData->lock));
@@ -215,6 +201,19 @@ Library::initialiseMemHeapStaticData()
    memHeapData->fillValues[0] = 0xC3C3C3C3u;
    memHeapData->fillValues[1] = 0xF3F3F3F3u;
    memHeapData->fillValues[2] = 0xD3D3D3D3u;
+}
+
+void
+Library::registerMemHeapFunctions()
+{
+   RegisterFunctionExport(MEMGetBaseHeapHandle);
+   RegisterFunctionExport(MEMSetBaseHeapHandle);
+   RegisterFunctionExport(MEMCreateUserHeapHandle);
+   RegisterFunctionExport(MEMGetArena);
+   RegisterFunctionExport(MEMFindContainHeap);
+   RegisterFunctionExport(MEMDumpHeap);
+   RegisterFunctionExport(MEMGetFillValForHeap);
+   RegisterFunctionExport(MEMSetFillValForHeap);
 }
 
 namespace internal

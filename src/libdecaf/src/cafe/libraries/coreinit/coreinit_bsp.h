@@ -12,9 +12,14 @@ BSPError
 bspInitializeShimInterface();
 
 BSPError
-bspShutdownShimInterface();
+bspGetHardwareVersion(virt_ptr<BSPHardwareVersion> version);
+
+namespace internal
+{
 
 BSPError
-bspGetHardwareVersion(virt_ptr<BSPHardwareVersion> version);
+bspShutdownShimInterface();
+
+} // namespace internal
 
 } // namespace cafe::coreinit

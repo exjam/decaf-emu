@@ -86,6 +86,15 @@ initialiseDeviceTable()
 } // namespace internal
 
 void
+Library::initialiseDeviceStaticData()
+{
+   auto deviceData = allocStaticData<StaticDeviceData>();
+   Library::getStaticData()->deviceData = deviceData;
+
+   deviceData->deviceTable.fill(virt_addr { 0 });
+}
+
+void
 Library::registerDeviceFunctions()
 {
    RegisterFunctionExport(OSReadRegister16);

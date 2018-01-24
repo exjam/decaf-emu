@@ -421,13 +421,22 @@ ipcDriverThreadEntry(uint32_t coreId,
 } // namespace internal
 
 void
+Library::initialiseIpcDriverStaticData()
+{
+   auto ipcDriverData = allocStaticData<StaticIpcDriverData>();
+   getStaticData()->ipcDriverData = ipcDriverData;
+
+   ipcDriverData->threadEntryPoint = GetInternalFunctionAddress(internal::ipcDriverThreadEntry);
+}
+
+void
 Library::registerIpcDriverFunctions()
 {
-   RegisterKernelFunction(IPCDriverInit);
-   RegisterKernelFunction(IPCDriverOpen);
-   RegisterKernelFunction(IPCDriverClose);
-   RegisterInternalData(sIpcData);
-   RegisterInternalFunction(internal::ipcDriverThreadEntry, sIpcDriverEntryPoint);
+   RegisterFunctionExport(IPCDriverInit);
+   RegisterFunctionExport(IPCDriverOpen);
+   RegisterFunctionExport(IPCDriverClose);
+
+   RegisterFunctionInternal(internal::ipcDriverThreadEntry);
 }
 
 } // namespace cafe::coreinit

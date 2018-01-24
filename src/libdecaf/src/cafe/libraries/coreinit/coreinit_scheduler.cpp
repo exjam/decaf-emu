@@ -623,9 +623,8 @@ promoteThreadPriorityNoLock(virt_ptr<OSThread> thread,
 void
 Library::initialiseSchedulerStaticData()
 {
-   auto schedulerData = virt_ptr<StaticSchedulerData> { nullptr };
-   auto libraryStaticData = getStaticData();
-   libraryStaticData->schedulerData = schedulerData;
+   auto schedulerData = allocStaticData<StaticSchedulerData>();
+   getStaticData()->schedulerData = schedulerData;
 
    OSInitThreadQueue(virt_addrof(schedulerData->activeThreadQueue));
 

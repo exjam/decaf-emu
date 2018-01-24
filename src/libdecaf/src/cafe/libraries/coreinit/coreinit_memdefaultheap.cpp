@@ -143,8 +143,7 @@ MEMFreeToDefaultHeap(virt_ptr<void> ptr)
 void
 Library::initialiseDefaultHeapStaticData()
 {
-   // TODO: Alloc static data
-   auto defaultHeapData = virt_ptr<StaticDefaultHeapData> { nullptr };
+   auto defaultHeapData = allocStaticData<StaticDefaultHeapData>();
    Library::getStaticData()->defaultHeapData = defaultHeapData;
 
    // Register data exports

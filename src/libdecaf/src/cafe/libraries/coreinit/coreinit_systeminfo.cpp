@@ -111,8 +111,9 @@ OSGetArgcArgv(virt_ptr<uint32_t> argc,
 void
 Library::initialiseSystemInfoStaticData()
 {
-   // TODO: Allocate systemInfoData static data
-   auto systemInfoData = virt_ptr<StaticSystemInfoData> { 0 };
+   auto systemInfoData = allocStaticData<StaticSystemInfoData>();
+   getStaticData()->systemInfoData = systemInfoData;
+
    systemInfoData->systemInfo.busSpeed = cpu::busClockSpeed;
    systemInfoData->systemInfo.coreSpeed = cpu::coreClockSpeed;
    systemInfoData->systemInfo.baseTime = internal::getBaseTime();

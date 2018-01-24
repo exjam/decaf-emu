@@ -343,6 +343,10 @@ OSFastCond_Wait(OSFastCondition *condition,
    mutex->count = mutexCount;
 }
 
+
+/**
+ * Will wake up any threads waiting on the condition with OSFastCond_Wait.
+ */
 void
 OSFastCond_Signal(OSFastCondition *condition)
 {
@@ -350,6 +354,7 @@ OSFastCond_Signal(OSFastCondition *condition)
    decaf_check(condition->tag == OSFastCondition::Tag);
    OSWakeupThread(&condition->queue);
 }
+
 
 void
 Module::registerFastMutexFunctions()

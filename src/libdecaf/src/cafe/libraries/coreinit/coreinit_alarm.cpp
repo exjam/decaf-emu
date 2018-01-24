@@ -438,8 +438,7 @@ alarmCallbackThreadEntry(uint32_t coreId,
 void
 Library::initialiseAlarmStaticData()
 {
-   // TODO: Allocate from static memory frame allocator
-   auto alarmData = virt_ptr<StaticAlarmData> { nullptr };
+   auto alarmData = allocStaticData<StaticAlarmData>();
    Library::getStaticData()->alarmData = alarmData;
 
    for (auto i = 0u; i < alarmData->perCoreData.size(); ++i) {

@@ -216,8 +216,7 @@ allocatorUnitHeapFree(virt_ptr<MEMAllocator> allocator,
 void
 Library::initialiseAllocatorStaticData()
 {
-   // TODO: Allocate from static memory frame allocator
-   auto allocatorData = virt_ptr<StaticAllocatorData> { nullptr };
+   auto allocatorData = allocStaticData<StaticAllocatorData>();
    Library::getStaticData()->allocatorData = allocatorData;
 
    allocatorData->defaultHeapFunctions.alloc = GetInternalFunctionAddress(allocatorDefaultHeapAlloc);

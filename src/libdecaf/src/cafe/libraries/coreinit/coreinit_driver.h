@@ -6,7 +6,7 @@ namespace cafe::coreinit
 
 #pragma pack(push, 1)
 
-using OSDriver_GetNameFn = virt_func_ptr<const char *()>;
+using OSDriver_GetNameFn = virt_func_ptr<virt_ptr<const char>()>;
 using OSDriver_OnInitFn = virt_func_ptr<void(virt_ptr<void>)>;
 using OSDriver_OnAcquiredForegroundFn = virt_func_ptr<void(virt_ptr<void>)>;
 using OSDriver_OnReleasedForegroundFn = virt_func_ptr<void(virt_ptr<void>)>;
@@ -15,7 +15,7 @@ using OSDriver_OnDoneFn = virt_func_ptr<void(virt_ptr<void>)>;
 struct OSDriverInterface
 {
    //! Return the driver name
-   be2_val<OSDriver_GetNameFn> name;
+   be2_val<OSDriver_GetNameFn> getName;
 
    //! Called to initialise the driver.
    be2_val<OSDriver_OnInitFn> onInit;

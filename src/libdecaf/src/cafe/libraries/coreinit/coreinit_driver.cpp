@@ -6,7 +6,7 @@ namespace cafe::coreinit
 
 struct StaticDriverData
 {
-   be2_virt_ptr<OSDriver> registeredDrivers;
+   be2_virt_ptr<OSDriver> registeredDrivers = nullptr;
 };
 
 static virt_ptr<StaticDriverData>
@@ -70,6 +70,13 @@ OSDriver_Deregister(uint32_t moduleHandle,
 {
    // TODO: OSDriver_Deregister
    return FALSE;
+}
+
+void
+Library::initialiseDriverStaticData()
+{
+   auto driverData = allocStaticData<StaticDriverData>();
+   Library::getStaticData()->driverData = driverData;
 }
 
 void

@@ -46,6 +46,20 @@ prepareIpcBuffer(std::size_t responseSize,
    return BSPError::OK;
 }
 
+BSPError
+bspShutdownShimInterface()
+{
+   auto bspData = getBspData();
+   auto result = IOS_Close(bspData->bspHandle);
+
+   if (IOS_FAILED(result)) {
+      return BSPError::IosError;
+   }
+
+   bspData->bspHandle = IOSError::Invalid;
+   return BSPError::OK;
+}
+
 } // namespace internal
 
 BSPError
@@ -59,20 +73,6 @@ bspInitializeShimInterface()
    }
 
    bspData->bspHandle = static_cast<IOSHandle>(result);
-   return BSPError::OK;
-}
-
-BSPError
-bspShutdownShimInterface()
-{
-   auto bspData = getBspData();
-   auto result = IOS_Close(bspData->bspHandle);
-
-   if (IOS_FAILED(result)) {
-      return BSPError::IosError;
-   }
-
-   bspData->bspHandle = IOSError::Invalid;
    return BSPError::OK;
 }
 
@@ -100,6 +100,20 @@ bspGetHardwareVersion(virt_ptr<BSPHardwareVersion> version)
 
    *version = buffer->response.getHardwareVersion.hardwareVersion;
    return  BSPError::OK;
+}
+
+void
+Library::initialiseBspStaticData()
+{
+   auto bspData = allocStaticData<StaticBspData>();
+   getStaticData()->bspData = bspData;
+}
+
+void
+Library::registerBspFunctions()
+{
+   RegisterFunctionExport(bspInitializeShimInterface);
+   RegisterFunctionExport(bspGetHardwareVersion);
 }
 
 } // namespace cafe::coreinit

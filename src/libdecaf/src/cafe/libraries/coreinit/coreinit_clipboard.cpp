@@ -93,6 +93,13 @@ OSCopyToClipboard(virt_ptr<const void> buffer,
 }
 
 void
+Library::initialiseClipboardStaticData()
+{
+   auto clipboardData = allocStaticData<StaticClipboardData>();
+   getStaticData()->clipboardData = clipboardData;
+}
+
+void
 Library::registerClipboardExports()
 {
    RegisterFunctionExport(OSCopyFromClipboard);

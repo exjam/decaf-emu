@@ -339,9 +339,9 @@ OSWaitEventWithTimeout(virt_ptr<OSEvent> event,
 void
 Library::initialiseEventStaticData()
 {
-   // TODO: Allocate from static memory frame allocator
-   auto eventData = virt_ptr<StaticEventData> { nullptr };
+   auto eventData = allocStaticData<StaticEventData>();
    Library::getStaticData()->eventData = eventData;
+
    eventData->eventAlarmHandler = GetInternalFunctionAddress(EventAlarmHandler);
 }
 

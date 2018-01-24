@@ -208,7 +208,8 @@ fsCmdBlockPrepareAsync(FSClientBody *clientBody,
    decaf_check(clientBody);
    decaf_check(blockBody);
 
-   if (blockBody->status != FSCmdBlockStatus::Initialised && blockBody->status != FSCmdBlockStatus::Cancelled) {
+   if (blockBody->status != FSCmdBlockStatus::Initialised &&
+       blockBody->status != FSCmdBlockStatus::Cancelled) {
       gLog->error("Invalid FSCmdBlockData state {}", blockBody->status.value());
       return FSStatus::FatalError;
    }
@@ -509,8 +510,10 @@ fsCmdBlockFinishCmd(FSCmdBlockBody *blockBody,
    case FSACommand::FlushMultiQuota:
    case FSACommand::RemoveQuota:
    case FSACommand::MakeLink:
+   {
       fsCmdBlockSetResult(blockBody, result);
       break;
+   }
    case FSACommand::GetVolumeInfo:
    {
       auto info = blockBody->cmdData.getVolumeInfo.info;
