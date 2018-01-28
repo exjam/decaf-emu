@@ -28,6 +28,7 @@ struct StaticMemHeapData;
 struct StaticSchedulerData;
 struct StaticSystemInfoData;
 struct StaticThreadData;
+struct StaticUserConfigData;
 
 struct LibraryStaticData
 {
@@ -53,6 +54,7 @@ struct LibraryStaticData
    virt_ptr<StaticSchedulerData> schedulerData;
    virt_ptr<StaticSystemInfoData> systemInfoData;
    virt_ptr<StaticThreadData> threadData;
+   virt_ptr<StaticUserConfigData> userConfigData;
 };
 
 class Library : public cafe::hle::Library
@@ -114,6 +116,7 @@ protected:
    void registerSystemInfoExports();
    void registerTaskQueueExports();
    void registerTimeExports();
+   void registerUserConfigFunctions();
 
    void initialiseAlarmStaticData();
    void initialiseAllocatorStaticData();
@@ -135,6 +138,7 @@ protected:
    void initialiseMemHeapStaticData();
    void initialiseSchedulerStaticData();
    void initialiseSystemInfoStaticData();
+   void initialiseUserConfigStaticData();
 
    void initialiseClock();
 
