@@ -1,6 +1,7 @@
 #pragma once
 #include "coreinit_enum.h"
 #include "coreinit_time.h"
+#include "cafe/kernel/cafe_kernel_process.h"
 
 #include <libcpu/be2_struct.h>
 
@@ -55,6 +56,9 @@ OSGetTitleID();
 
 uint64_t
 OSGetOSID();
+
+kernel::UniqueProcessId
+OSGetUPID();
 
 OSShutdownReason
 OSGetShutdownReason();

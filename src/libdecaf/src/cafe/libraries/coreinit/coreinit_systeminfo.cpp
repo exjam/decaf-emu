@@ -13,6 +13,7 @@ struct StaticSystemInfoData
    be2_struct<OSSystemInfo> systemInfo;
    be2_val<BOOL> screenCapturePermission;
    be2_val<BOOL> enableHomeButtonMenu;
+   be2_val<kernel::UniqueProcessId> uniqueProcessId;
    be2_val<uint64_t> titleID;
    be2_val<uint64_t> osID;
 };
@@ -83,15 +84,19 @@ OSBlockThreadsOnExit()
 uint64_t
 OSGetTitleID()
 {
-   auto systemInfoData = getSystemInfoData();
-   return systemInfoData->titleID;
+   return getSystemInfoData()->titleID;
 }
 
 uint64_t
 OSGetOSID()
 {
-   auto systemInfoData = getSystemInfoData();
-   return systemInfoData->osID;
+   return getSystemInfoData()->osID;
+}
+
+kernel::UniqueProcessId
+OSGetUPID()
+{
+   return getSystemInfoData()->uniqueProcessId;
 }
 
 OSShutdownReason
@@ -139,6 +144,7 @@ Library::registerSystemInfoExports()
    RegisterFunctionExport(OSBlockThreadsOnExit);
    RegisterFunctionExport(OSGetTitleID);
    RegisterFunctionExport(OSGetOSID);
+   RegisterFunctionExport(OSGetUPID);
    RegisterFunctionExport(OSGetShutdownReason);
    RegisterFunctionExport(OSGetArgcArgv);
 }
