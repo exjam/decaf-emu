@@ -15,7 +15,7 @@ struct OSSystemInfo
    be2_val<uint32_t> busSpeed;
    be2_val<uint32_t> coreSpeed;
    be2_val<OSTime> baseTime;
-   be2_val<uint32_t> l2CacheSize[3];
+   be2_array<uint32_t, 3> l2CacheSize;
    be2_val<uint32_t> cpuRatio;
 };
 CHECK_OFFSET(OSSystemInfo, 0x0, busSpeed);
