@@ -44,6 +44,12 @@ OSBlockSet(virt_ptr<void> dst,
    return dst;
 }
 
+/**
+ * Get the foreground memory bucket address and size.
+ *
+ * \return
+ * Returns TRUE if the current process is in the foreground.
+ */
 BOOL
 OSGetForegroundBucket(virt_ptr<virt_addr> addr,
                       virt_ptr<uint32_t> size)
@@ -74,7 +80,7 @@ enum ForegroundArea
 };
 
 static virt_ptr<void>
-GetFgMemPtr(ForegroundArea area)
+getFgMemPtr(ForegroundArea area)
 {
    struct FgMemInfo
    {
@@ -112,7 +118,7 @@ OSGetForegroundBucketFreeArea(virt_ptr<virt_addr> addr,
    auto memoryData = getMemoryData();
 
    if (addr) {
-      *addr = virt_cast<virt_addr>(GetFgMemPtr(ForegroundArea::Application));
+      *addr = virt_cast<virt_addr>(getFgMemPtr(ForegroundArea::Application));
    }
 
    if (size) {
