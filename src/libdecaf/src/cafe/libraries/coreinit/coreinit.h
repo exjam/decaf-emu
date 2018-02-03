@@ -23,6 +23,7 @@ struct StaticFsDriverData;
 struct StaticFsStateMachineData;
 struct StaticImData;
 struct StaticIpcDriverData;
+struct StaticLockedCacheData;
 struct StaticMcpData;
 struct StaticMemHeapData;
 struct StaticSchedulerData;
@@ -49,6 +50,7 @@ struct LibraryStaticData
    virt_ptr<StaticFsStateMachineData> fsStateMachineData;
    virt_ptr<StaticImData> imData;
    virt_ptr<StaticIpcDriverData> ipcDriverData;
+   virt_ptr<StaticLockedCacheData> lockedCacheData;
    virt_ptr<StaticMcpData> mcpData;
    virt_ptr<StaticMemHeapData> memHeapData;
    virt_ptr<StaticSchedulerData> schedulerData;
@@ -99,6 +101,7 @@ protected:
    void registerIosFunctions();
    void registerIpcBufPoolFunctions();
    void registerIpcDriverFunctions();
+   void registerLockedCacheFunctions();
    void registerMcpFunctions();
    void registerMemoryFunctions();
    void registerMemDefaultHeapFunctions();
@@ -135,6 +138,7 @@ protected:
    void initialiseFsStateMachineStaticData();
    void initialiseImStaticData();
    void initialiseIpcDriverStaticData();
+   void initialiseLockedCacheStaticData();
    void initialiseMemHeapStaticData();
    void initialiseSchedulerStaticData();
    void initialiseSystemInfoStaticData();
