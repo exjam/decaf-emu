@@ -1,9 +1,13 @@
 #include "coreinit.h"
 #include "coreinit_appio.h"
 #include "coreinit_core.h"
+#include "coreinit_fsa.h"
+#include "coreinit_fs_cmdblock.h"
 #include "coreinit_thread.h"
 #include "coreinit_messagequeue.h"
 #include "cafe/cafe_stackobject.h"
+#include "cafe/cafe_ppc_interface_invoke.h"
+#include <libcpu/cpu.h>
 
 namespace cafe::coreinit
 {
@@ -62,11 +66,13 @@ appIoThreadEntry(uint32_t coreId,
       {
          auto result = FSAGetAsyncResult(msg);
          if (result->userCallback) {
-            result->userCallback(result->error,
-                                 result->command,
-                                 result->request,
-                                 result->response,
-                                 result->userContext);
+            cafe::invoke(cpu::this_core::state(),
+                         result->userCallback,
+                         result->error,
+                         result->command,
+                         result->request,
+                         result->response,
+                         result->userContext);
          }
          break;
       }
@@ -74,10 +80,12 @@ appIoThreadEntry(uint32_t coreId,
       {
          auto result = FSGetAsyncResult(msg);
          if (result->asyncData.userCallback) {
-            result->asyncData.userCallback(result->client,
-                                           result->block,
-                                           result->status,
-                                           result->asyncData.userContext);
+            cafe::invoke(cpu::this_core::state(),
+                         result->asyncData.userCallback,
+                         result->client,
+                         result->block,
+                         result->status,
+                         result->asyncData.userContext);
          }
          break;
       }
