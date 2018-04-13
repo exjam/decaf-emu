@@ -2,6 +2,7 @@
 #include "cafe_ppc_interface.h"
 #include <libcpu/cpu.h>
 #include <libcpu/functionpointer.h>
+#include <libcpu/be2_val.h>
 
 namespace cafe
 {
@@ -147,6 +148,21 @@ template<typename FunctionType, typename... ArgTypes>
 decltype(auto)
 invoke(cpu::Core *core,
        cpu::FunctionPointer<cpu::VirtualAddress, FunctionType> fn,
+       ArgTypes &&... args)
+{
+   using func_traits = detail::function_traits<FunctionType>;
+   return invoke_guest_impl(core,
+                            fn.getAddress(),
+                            func_traits { },
+                            std::make_index_sequence<func_traits::num_args> {},
+                            std::forward<ArgTypes>(args)...);
+}
+
+// Invoke a be2_val guest function from a host context
+template<typename FunctionType, typename... ArgTypes>
+decltype(auto)
+invoke(cpu::Core *core,
+       be2_val<cpu::FunctionPointer<cpu::VirtualAddress, FunctionType>> fn,
        ArgTypes &&... args)
 {
    using func_traits = detail::function_traits<FunctionType>;
