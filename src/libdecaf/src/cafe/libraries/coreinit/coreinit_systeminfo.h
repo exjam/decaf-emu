@@ -3,6 +3,7 @@
 #include "coreinit_time.h"
 #include "cafe/kernel/cafe_kernel_process.h"
 
+#include <common/bitfield.h>
 #include <libcpu/be2_struct.h>
 
 namespace cafe::coreinit
@@ -24,6 +25,10 @@ CHECK_OFFSET(OSSystemInfo, 0x8, baseTime);
 CHECK_OFFSET(OSSystemInfo, 0x10, l2CacheSize);
 CHECK_OFFSET(OSSystemInfo, 0x1C, cpuRatio);
 CHECK_SIZE(OSSystemInfo, 0x20);
+
+BITFIELD(OSAppFlags, uint32_t)
+   BITFIELD_ENTRY(9, 3, OSAppFlagsDebugLevel, debugLevel);
+BITFIELD_END
 
 #pragma pack(pop)
 
@@ -60,11 +65,22 @@ OSGetOSID();
 kernel::UniqueProcessId
 OSGetUPID();
 
+OSAppFlags
+OSGetAppFlags();
+
 OSShutdownReason
 OSGetShutdownReason();
 
 void
 OSGetArgcArgv(virt_ptr<uint32_t> argc,
               virt_ptr<virt_ptr<const char>> argv);
+
+namespace internal
+{
+
+bool
+isAppDebugLevelVerbose();
+
+} // namespace internal
 
 } // namespace cafe::coreinit

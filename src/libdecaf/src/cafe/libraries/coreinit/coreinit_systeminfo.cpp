@@ -14,6 +14,7 @@ struct StaticSystemInfoData
    be2_val<BOOL> screenCapturePermission;
    be2_val<BOOL> enableHomeButtonMenu;
    be2_val<kernel::UniqueProcessId> uniqueProcessId;
+   be2_val<OSAppFlags> appFlags;
    be2_val<uint64_t> titleID;
    be2_val<uint64_t> osID;
 };
@@ -99,6 +100,12 @@ OSGetUPID()
    return getSystemInfoData()->uniqueProcessId;
 }
 
+OSAppFlags
+OSGetAppFlags()
+{
+   return getSystemInfoData()->appFlags;
+}
+
 OSShutdownReason
 OSGetShutdownReason()
 {
@@ -112,6 +119,18 @@ OSGetArgcArgv(virt_ptr<uint32_t> argc,
    *argc = 0u;
    *argv = nullptr;
 }
+
+namespace internal
+{
+
+bool
+isAppDebugLevelVerbose()
+{
+   return getSystemInfoData()->appFlags.value()
+      .debugLevel() >= OSAppFlagsDebugLevel::Verbose;
+}
+
+} // namespace internal
 
 void
 Library::initialiseSystemInfoStaticData()
@@ -147,6 +166,7 @@ Library::registerSystemInfoExports()
    RegisterFunctionExport(OSGetUPID);
    RegisterFunctionExport(OSGetShutdownReason);
    RegisterFunctionExport(OSGetArgcArgv);
+   RegisterFunctionExportName("_OSGetAppFlags", OSGetAppFlags);
 }
 
 } // namespace cafe::coreinit
