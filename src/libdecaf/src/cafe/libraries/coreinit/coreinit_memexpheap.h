@@ -72,7 +72,7 @@ CHECK_SIZE(MEMExpHeap, 0x54);
 MEMHeapHandle
 MEMCreateExpHeapEx(virt_ptr<void> base,
                    uint32_t size,
-                   MEMHeapAttribs attribs);
+                   uint32_t flags);
 
 virt_ptr<void>
 MEMDestroyExpHeap(MEMHeapHandle handle);

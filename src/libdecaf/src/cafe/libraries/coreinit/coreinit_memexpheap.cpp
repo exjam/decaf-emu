@@ -1,5 +1,7 @@
 #include "coreinit.h"
 #include "coreinit_memexpheap.h"
+#include "coreinit_memory.h"
+#include <common/log.h>
 
 namespace cafe::coreinit
 {
@@ -13,8 +15,8 @@ UsedTag = 0x5544; // 'UD'
 static virt_ptr<uint8_t>
 getBlockMemStart(virt_ptr<MEMExpHeapBlock> block)
 {
-   auto attribs = static_cast<MEMExpHeapBlockAttribs>(block->attribs);
-   return virst_cast<uint8_t*>(block) - attribs.alignment();
+   auto attribs = block->attribs.value();
+   return virt_cast<uint8_t *>(block) - attribs.alignment();
 }
 
 static virt_ptr<uint8_t>
@@ -30,9 +32,9 @@ getBlockDataStart(virt_ptr<MEMExpHeapBlock> block)
 }
 
 static virt_ptr<MEMExpHeapBlock>
-getUsedMemBlock(void * mem)
+getUsedMemBlock(virt_ptr<void> mem)
 {
-   auto block = reinterpret_cast<virt_ptr<MEMExpHeapBlock> >(mem) - 1;
+   auto block = virt_cast<MEMExpHeapBlock *>(mem) - 1;
    decaf_check(block->tag == UsedTag);
    return block;
 }
@@ -136,7 +138,6 @@ createUsedBlockFromFreeBlock(virt_ptr<MEMExpHeap> heap,
                              uint32_t alignment,
                              MEMExpHeapDirection dir)
 {
-   auto heapAttribs = heap->header.attribs.value();
    auto expHeapAttribs = heap->attribs.value();
    auto freeBlockAttribs = freeBlock->attribs.value();
 
@@ -146,10 +147,10 @@ createUsedBlockFromFreeBlock(virt_ptr<MEMExpHeap> heap,
 
    // Free blocks should never have alignment...
    decaf_check(!freeBlockAttribs.alignment());
-   removeBlock(&heap->freeList, freeBlock);
+   removeBlock(virt_addrof(heap->freeList), freeBlock);
 
    // Find where we are going to start
-   uint8_t *alignedDataStart = nullptr;
+   auto alignedDataStart = virt_ptr<uint8_t> { };
 
    if (dir == MEMExpHeapDirection::FromStart) {
       alignedDataStart = align_up(freeMemStart + sizeof(MEMExpHeapBlock), alignment);
@@ -180,7 +181,7 @@ createUsedBlockFromFreeBlock(virt_ptr<MEMExpHeap> heap,
          freeBlock->prev = nullptr;
          freeBlock->tag = FreeTag;
 
-         insertBlock(&heap->freeList, freeBlockPrev, freeBlock);
+         insertBlock(virt_addrof(heap->freeList), freeBlockPrev, freeBlock);
          topSpaceRemain = 0;
       }
    }
@@ -197,7 +198,7 @@ createUsedBlockFromFreeBlock(virt_ptr<MEMExpHeap> heap,
          freeBlock->prev = nullptr;
          freeBlock->tag = FreeTag;
 
-         insertBlock(&heap->freeList, freeBlockPrev, freeBlock);
+         insertBlock(virt_addrof(heap->freeList), freeBlockPrev, freeBlock);
          bottomSpaceRemain = 0;
       }
    }
@@ -213,9 +214,9 @@ createUsedBlockFromFreeBlock(virt_ptr<MEMExpHeap> heap,
 
    insertBlock(virt_addrof(heap->usedList), nullptr, alignedBlock);
 
-   if (heapAttribs.zeroAllocated()) {
+   if (heap->header.flags & MEMHeapFlags::ZeroAllocated) {
       memset(alignedDataStart, 0, size);
-   } else if (heapAttribs.debugMode()) {
+   } else if (heap->header.flags & MEMHeapFlags::DebugMode) {
       auto fillVal = MEMGetFillValForHeap(MEMHeapFillType::Allocated);
       memset(alignedDataStart, fillVal, size);
    }
@@ -229,10 +230,9 @@ releaseMemory(virt_ptr<MEMExpHeap> heap,
               virt_ptr<uint8_t> memEnd)
 {
    decaf_check(memEnd - memStart >= sizeof(MEMExpHeapBlock) + 4);
-   auto heapAttribs = heap->header.attribs.value();
 
    // Fill the released memory with debug data if needed
-   if (heapAttribs.debugMode()) {
+   if (heap->header.flags & MEMHeapFlags::DebugMode) {
       auto fillVal = MEMGetFillValForHeap(MEMHeapFillType::Freed);
       memset(memStart, fillVal, memEnd - memStart);
    }
@@ -297,7 +297,7 @@ releaseMemory(virt_ptr<MEMExpHeap> heap,
 MEMHeapHandle
 MEMCreateExpHeapEx(virt_ptr<void> base,
                    uint32_t size,
-                   MEMHeapAttribs heapAttribs)
+                   uint32_t flags)
 {
    decaf_check(base);
 
@@ -318,7 +318,7 @@ MEMCreateExpHeapEx(virt_ptr<void> base,
                           MEMHeapTag::ExpandedHeap,
                           alignedStart + sizeof(MEMExpHeap),
                           alignedEnd,
-                          heapAttribs);
+                          static_cast<MEMHeapFlags>(flags));
 
    // Create an initial block of the data
    auto dataStart = alignedStart + sizeof(MEMExpHeap);
@@ -338,7 +338,7 @@ MEMCreateExpHeapEx(virt_ptr<void> base,
    heap->groupId = 0;
    heap->attribs = MEMExpHeapAttribs::get(0);
 
-   return heap;
+   return virt_cast<MEMHeapHeader *>(heap);
 }
 
 virt_ptr<void>
@@ -347,7 +347,7 @@ MEMDestroyExpHeap(MEMHeapHandle handle)
    auto heap = virt_cast<MEMExpHeap *>(handle);
    decaf_check(heap);
    decaf_check(heap->header.tag == MEMHeapTag::ExpandedHeap);
-   internal::unregisterHeap(&heap->header);
+   internal::unregisterHeap(virt_addrof(heap->header));
    return heap;
 }
 
@@ -379,7 +379,9 @@ MEMAllocFromExpHeapEx(MEMHeapHandle handle,
       decaf_check((alignment & 0x3) == 0);
 
       for (auto block = heap->freeList.head; block; block = block->next) {
-         auto alignedSize = getAlignedBlockSize(block, alignment, MEMExpHeapDirection::FromStart);
+         auto alignedSize = getAlignedBlockSize(block,
+                                                alignment,
+                                                MEMExpHeapDirection::FromStart);
 
          if (alignedSize >= size) {
             if (expHeapFlags.allocMode() == MEMExpHeapMode::FirstFree) {
@@ -395,7 +397,11 @@ MEMAllocFromExpHeapEx(MEMHeapHandle handle,
       }
 
       if (foundBlock) {
-         newBlock = createUsedBlockFromFreeBlock(heap, foundBlock, size, alignment, MEMExpHeapDirection::FromStart);
+         newBlock = createUsedBlockFromFreeBlock(heap,
+                                                 foundBlock,
+                                                 size,
+                                                 alignment,
+                                                 MEMExpHeapDirection::FromStart);
       }
    } else {
       alignment = std::max(4, -alignment);
@@ -405,7 +411,9 @@ MEMAllocFromExpHeapEx(MEMHeapHandle handle,
       auto bestAlignedSize = 0xFFFFFFFFu;
 
       for (auto block = heap->freeList.head; block; block = block->next) {
-         auto alignedSize = getAlignedBlockSize(block, alignment, MEMExpHeapDirection::FromEnd);
+         auto alignedSize = getAlignedBlockSize(block,
+                                                alignment,
+                                                MEMExpHeapDirection::FromEnd);
 
          if (alignedSize >= size) {
             if (expHeapFlags.allocMode() == MEMExpHeapMode::FirstFree) {
@@ -421,7 +429,11 @@ MEMAllocFromExpHeapEx(MEMHeapHandle handle,
       }
 
       if (foundBlock) {
-         newBlock = createUsedBlockFromFreeBlock(heap, foundBlock, size, alignment, MEMExpHeapDirection::FromEnd);
+         newBlock = createUsedBlockFromFreeBlock(heap,
+                                                 foundBlock,
+                                                 size,
+                                                 alignment,
+                                                 MEMExpHeapDirection::FromEnd);
       }
    }
 
@@ -435,7 +447,7 @@ MEMAllocFromExpHeapEx(MEMHeapHandle handle,
 
 void
 MEMFreeToExpHeap(MEMHeapHandle handle,
-                 void *mem)
+                 virt_ptr<void> mem)
 {
    auto heap = virt_cast<MEMExpHeap *>(handle);
    decaf_check(heap->header.tag == MEMHeapTag::ExpandedHeap);
@@ -447,15 +459,15 @@ MEMFreeToExpHeap(MEMHeapHandle handle,
    internal::HeapLock lock { virt_addrof(heap->header) };
 
    // Find the block
-   auto dataStart = reinterpret_cast<uint8_t *>(mem);
-   auto block = reinterpret_cast<MEMExpHeapBlock*>(dataStart - sizeof(MEMExpHeapBlock));
+   auto dataStart = virt_cast<uint8_t *>(mem);
+   auto block = virt_cast<MEMExpHeapBlock *>(dataStart - sizeof(MEMExpHeapBlock));
 
    // Get the bounding region for this block
    auto memStart = getBlockMemStart(block);
    auto memEnd = getBlockMemEnd(block);
 
    // Remove the block from the used list
-   removeBlock(&heap->usedList, block);
+   removeBlock(virt_addrof(heap->usedList), block);
 
    // Release the memory back to the heap free list
    releaseMemory(heap, memStart, memEnd);
@@ -512,21 +524,20 @@ MEMAdjustExpHeap(MEMHeapHandle handle)
    heap->header.dataEnd = getBlockMemStart(lastFreeBlock);
 
    auto heapMemStart = virt_cast<uint8_t *>(heap);
-   auto heapMemEnd = virt_cast<uint8_t *>(heap->header.dataEnd.get());
+   auto heapMemEnd = virt_cast<uint8_t *>(heap->header.dataEnd);
    return static_cast<uint32_t>(heapMemEnd - heapMemStart);
 }
 
 uint32_t
 MEMResizeForMBlockExpHeap(MEMHeapHandle handle,
-                          virt_ptr<uint8_t> address,
+                          virt_ptr<void> ptr,
                           uint32_t size)
 {
    auto heap = virt_cast<MEMExpHeap *>(handle);
    internal::HeapLock lock { virt_addrof(heap->header) };
    size = align_up(size, 4);
 
-   auto heapAttribs = heap->header.attribs.value();
-   auto block = getUsedMemBlock(address);
+   auto block = getUsedMemBlock(ptr);
 
    if (size < block->blockSize) {
       auto releasedSpace = block->blockSize - size;
@@ -573,9 +584,9 @@ MEMResizeForMBlockExpHeap(MEMHeapHandle handle,
       freeMemSize -= newAllocSize;
       block->blockSize = size;
 
-      if (heapAttribs.zeroAllocated()) {
+      if (heap->header.flags & MEMHeapFlags::ZeroAllocated) {
          memset(freeBlockMemStart, 0, newAllocSize);
-      } else if (heapAttribs.debugMode()) {
+      } else if(heap->header.flags & MEMHeapFlags::DebugMode) {
          auto fillVal = MEMGetFillValForHeap(MEMHeapFillType::Allocated);
          memset(freeBlockMemStart, fillVal, newAllocSize);
       }
@@ -662,25 +673,25 @@ MEMGetGroupIDForExpHeap(MEMHeapHandle handle)
 }
 
 uint32_t
-MEMGetSizeForMBlockExpHeap(virt_ptr<void> block)
+MEMGetSizeForMBlockExpHeap(virt_ptr<void> ptr)
 {
-   auto addr = virt_cast<virt_addr>(block);
+   auto addr = virt_cast<virt_addr>(ptr);
    auto block = virt_cast<MEMExpHeapBlock *>(addr - sizeof(MEMExpHeapBlock));
    return block->blockSize;
 }
 
 uint16_t
-MEMGetGroupIDForMBlockExpHeap(virt_ptr<void> block)
+MEMGetGroupIDForMBlockExpHeap(virt_ptr<void> ptr)
 {
-   auto addr = virt_cast<virt_addr>(block);
+   auto addr = virt_cast<virt_addr>(ptr);
    auto block = virt_cast<MEMExpHeapBlock *>(addr - sizeof(MEMExpHeapBlock));
    return block->attribs.value().groupId();
 }
 
 MEMExpHeapDirection
-MEMGetAllocDirForMBlockExpHeap(virt_ptr<void> block)
+MEMGetAllocDirForMBlockExpHeap(virt_ptr<void> ptr)
 {
-   auto addr = virt_cast<virt_addr>(block);
+   auto addr = virt_cast<virt_addr>(ptr);
    auto block = virt_cast<MEMExpHeapBlock *>(addr - sizeof(MEMExpHeapBlock));
    return block->attribs.value().allocDir();
 }
@@ -693,14 +704,14 @@ dumpExpandedHeap(virt_ptr<MEMExpHeap> heap)
 {
    internal::HeapLock lock { virt_addrof(heap->header) };
 
-   gLog->debug("MEMExpHeap(0x{:8x})", mem::untranslate(heap));
+   gLog->debug("MEMExpHeap(0x{:8x})", heap);
    gLog->debug("Status Address   Size       Group");
 
    for (auto block = heap->freeList.head; block; block = block->next) {
       auto attribs = static_cast<MEMExpHeapBlockAttribs>(block->attribs);
 
       gLog->debug("FREE  0x{:8x} 0x{:8x} {:d}",
-                  mem::untranslate(block),
+                  block,
                   static_cast<uint32_t>(block->blockSize),
                   attribs.groupId());
    }
@@ -709,7 +720,7 @@ dumpExpandedHeap(virt_ptr<MEMExpHeap> heap)
       auto attribs = static_cast<MEMExpHeapBlockAttribs>(block->attribs);
 
       gLog->debug("USED  0x{:8x} 0x{:8x} {:d}",
-                  mem::untranslate(block),
+                  block,
                   static_cast<uint32_t>(block->blockSize),
                   attribs.groupId());
    }
