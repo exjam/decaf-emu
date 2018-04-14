@@ -33,12 +33,12 @@ MEMCreateFrmHeapEx(virt_ptr<void> base,
                           MEMHeapTag::FrameHeap,
                           start + sizeof(MEMFrameHeap),
                           end,
-                          flags);
+                          static_cast<MEMHeapFlags>(flags));
 
    heap->head = heap->header.dataStart;
    heap->tail = heap->header.dataEnd;
    heap->previousState = nullptr;
-   return heap;
+   return virt_cast<MEMHeapHeader *>(heap);
 }
 
 virt_ptr<void>
@@ -66,12 +66,11 @@ MEMAllocFromFrmHeapEx(MEMHeapHandle handle,
    }
 
    internal::HeapLock lock { virt_addrof(heap->header) };
-   auto heapAttribs = heap->header.attribs.value();
    auto block = virt_ptr<void> { nullptr };
 
    if (alignment < 0) {
       // Allocate from bottom
-      auto tail = align_down(heap->tail.get() - size, -alignment);
+      auto tail = align_down(heap->tail - size, -alignment);
 
       if (tail < heap->head) {
          // Not enough space!
@@ -82,7 +81,7 @@ MEMAllocFromFrmHeapEx(MEMHeapHandle handle,
       block = tail;
    } else {
       // Allocate from head
-      auto addr = align_up(heap->head.get(), alignment);
+      auto addr = align_up(heap->head, alignment);
       auto head = addr + size;
 
       if (head > heap->tail) {
@@ -96,9 +95,9 @@ MEMAllocFromFrmHeapEx(MEMHeapHandle handle,
 
    lock.unlock();
 
-   if (heapAttribs.zeroAllocated()) {
+   if (heap->header.flags & MEMHeapFlags::ZeroAllocated) {
       memset(block, 0, size);
-   } else if (heapAttribs.debugMode()) {
+   } else if (heap->header.flags & MEMHeapFlags::DebugMode) {
       auto value = MEMGetFillValForHeap(MEMHeapFillType::Allocated);
       memset(block, value, size);
    }
@@ -116,12 +115,11 @@ MEMFreeToFrmHeap(MEMHeapHandle handle,
    decaf_check(heap->header.tag == MEMHeapTag::FrameHeap);
 
    internal::HeapLock lock { virt_addrof(heap->header) };
-   auto heapAttribs = heap->header.attribs.value();
 
    if (mode & MEMFrameHeapFreeMode::Head) {
-      if (heapAttribs.debugMode()) {
+      if (heap->header.flags & MEMHeapFlags::DebugMode) {
          auto value = MEMGetFillValForHeap(MEMHeapFillType::Freed);
-         memset(heap->header.dataStart, value, heap->head.get() - heap->header.dataStart);
+         memset(heap->header.dataStart, value, heap->head - heap->header.dataStart);
       }
 
       heap->head = heap->header.dataStart;
@@ -129,9 +127,9 @@ MEMFreeToFrmHeap(MEMHeapHandle handle,
    }
 
    if (mode & MEMFrameHeapFreeMode::Tail) {
-      if (heapAttribs.debugMode()) {
+      if (heap->header.flags & MEMHeapFlags::DebugMode) {
          auto value = MEMGetFillValForHeap(MEMHeapFillType::Freed);
-         memset(heap->tail, value, heap->header.dataEnd.get() - heap->tail);
+         memset(heap->tail, value, heap->header.dataEnd - heap->tail);
       }
 
       heap->tail = heap->header.dataEnd;
@@ -143,14 +141,14 @@ BOOL
 MEMRecordStateForFrmHeap(MEMHeapHandle handle,
                          uint32_t tag)
 {
+   auto result = FALSE;
    auto heap = virt_cast<MEMFrameHeap *>(handle);
    decaf_check(heap);
    decaf_check(heap->header.tag == MEMHeapTag::FrameHeap);
 
    internal::HeapLock lock { virt_addrof(heap->header) };
-   auto heapAttribs = heap->header.attribs.value();
-   auto state = virt_cast<MEMFrameHeapState *>(MEMAllocFromFrmHeapEx(heap, sizeof(MEMFrameHeapState), 4));
-   auto result = FALSE;
+   auto state = virt_cast<MEMFrameHeapState *>(
+      MEMAllocFromFrmHeapEx(handle, sizeof(MEMFrameHeapState), 4));
 
    if (state) {
       state->tag = tag;
@@ -169,13 +167,12 @@ BOOL
 MEMFreeByStateToFrmHeap(MEMHeapHandle handle,
                         uint32_t tag)
 {
+   auto result = FALSE;
    auto heap = virt_cast<MEMFrameHeap *>(handle);
    decaf_check(heap);
    decaf_check(heap->header.tag == MEMHeapTag::FrameHeap);
 
    internal::HeapLock lock { virt_addrof(heap->header) };
-   auto result = FALSE;
-   auto heapAttribs = heap->header.attribs.value();
 
    // Find the state to reset to
    auto state = heap->previousState;
@@ -192,10 +189,10 @@ MEMFreeByStateToFrmHeap(MEMHeapHandle handle,
 
    // Reset to state
    if (state) {
-      if (heapAttribs.debugMode()) {
+      if (heap->header.flags & MEMHeapFlags::DebugMode) {
          auto value = MEMGetFillValForHeap(MEMHeapFillType::Freed);
-         memset(state->head, value, heap->head.get() - state->head);
-         memset(heap->tail, value, state->tail.get() - heap->tail);
+         memset(state->head, value, heap->head - state->head);
+         memset(heap->tail, value, state->tail - heap->tail);
       }
 
       heap->head = state->head;
@@ -222,8 +219,8 @@ MEMAdjustFrmHeap(MEMHeapHandle handle)
       heap->header.dataEnd = heap->head;
       heap->tail = heap->head;
 
-      auto heapMemStart = reinterpret_cast<uint8_t *>(heap);
-      result = static_cast<uint32_t>(heap->header.dataEnd.get() - heapMemStart);
+      auto heapMemStart = virt_cast<uint8_t *>(heap);
+      result = heap->header.dataEnd - heapMemStart;
    }
 
    return result;
@@ -239,7 +236,6 @@ MEMResizeForMBlockFrmHeap(MEMHeapHandle handle,
    decaf_check(heap->header.tag == MEMHeapTag::FrameHeap);
 
    internal::HeapLock lock { virt_addrof(heap->header) };
-   auto heapAttribs = static_cast<MEMHeapAttribs>(heap->header.attribs);
    auto result = 0u;
 
    decaf_check(address > heap->head);
@@ -250,7 +246,7 @@ MEMResizeForMBlockFrmHeap(MEMHeapHandle handle,
       size = 1;
    }
 
-   auto addrMem = reinterpret_cast<uint8_t *>(address);
+   auto addrMem = virt_cast<uint8_t *>(address);
    auto end = align_up(addrMem + size, 4);
 
    if (end > heap->tail) {
@@ -261,20 +257,20 @@ MEMResizeForMBlockFrmHeap(MEMHeapHandle handle,
       result = size;
    } else if (end < heap->head) {
       // Decrease size
-      if (heapAttribs.debugMode()) {
+      if (heap->header.flags & MEMHeapFlags::DebugMode) {
          auto value = MEMGetFillValForHeap(MEMHeapFillType::Freed);
-         std::memset(end, value, heap->head.get() - addrMem);
+         memset(end, value, heap->head - addrMem);
       }
 
       heap->head = end;
       result = size;
    } else if (end > heap->head) {
       // Increase size
-      if (heapAttribs.zeroAllocated()) {
-         std::memset(heap->head, 0, addrMem - heap->head);
-      } else if (heapAttribs.debugMode()) {
+      if (heap->header.flags & MEMHeapFlags::ZeroAllocated) {
+         memset(heap->head, 0, addrMem - heap->head);
+      } else if (heap->header.flags & MEMHeapFlags::DebugMode) {
          auto value = MEMGetFillValForHeap(MEMHeapFillType::Allocated);
-         std::memset(heap->head, value, addrMem - heap->head);
+         memset(heap->head, value, addrMem - heap->head);
       }
 
       heap->head = end;
@@ -293,11 +289,11 @@ MEMGetAllocatableSizeForFrmHeapEx(MEMHeapHandle handle,
    decaf_check(heap->header.tag == MEMHeapTag::FrameHeap);
 
    internal::HeapLock lock { virt_addrof(heap->header) };
-   auto alignedHead = align_up(heap->head.get(), alignment);
+   auto alignedHead = align_up(heap->head, alignment);
    auto result = 0u;
 
    if (alignedHead < heap->tail) {
-      result = static_cast<uint32_t>(heap->tail.get() - alignedHead);
+      result = static_cast<uint32_t>(heap->tail - alignedHead);
    }
 
    return result;
@@ -306,15 +302,15 @@ MEMGetAllocatableSizeForFrmHeapEx(MEMHeapHandle handle,
 void
 Library::registerMemFrameHeapFunctions()
 {
-   RegisterKernelFunction(MEMCreateFrmHeapEx);
-   RegisterKernelFunction(MEMDestroyFrmHeap);
-   RegisterKernelFunction(MEMAllocFromFrmHeapEx);
-   RegisterKernelFunction(MEMFreeToFrmHeap);
-   RegisterKernelFunction(MEMRecordStateForFrmHeap);
-   RegisterKernelFunction(MEMFreeByStateToFrmHeap);
-   RegisterKernelFunction(MEMAdjustFrmHeap);
-   RegisterKernelFunction(MEMResizeForMBlockFrmHeap);
-   RegisterKernelFunction(MEMGetAllocatableSizeForFrmHeapEx);
+   RegisterFunctionExport(MEMCreateFrmHeapEx);
+   RegisterFunctionExport(MEMDestroyFrmHeap);
+   RegisterFunctionExport(MEMAllocFromFrmHeapEx);
+   RegisterFunctionExport(MEMFreeToFrmHeap);
+   RegisterFunctionExport(MEMRecordStateForFrmHeap);
+   RegisterFunctionExport(MEMFreeByStateToFrmHeap);
+   RegisterFunctionExport(MEMAdjustFrmHeap);
+   RegisterFunctionExport(MEMResizeForMBlockFrmHeap);
+   RegisterFunctionExport(MEMGetAllocatableSizeForFrmHeapEx);
 }
 
 } // namespace cafe::coreinit
