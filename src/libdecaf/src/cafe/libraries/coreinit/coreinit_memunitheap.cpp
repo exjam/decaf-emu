@@ -55,7 +55,7 @@ MEMCreateUnitHeapEx(virt_ptr<void> base,
                           MEMHeapTag::UnitHeap,
                           dataStart,
                           dataStart + alignedBlockSize * blockCount,
-                          flags);
+                          static_cast<MEMHeapFlags>(flags));
 
    // Setup the MEMUnitHeap
    auto firstBlock = virt_cast<MEMUnitHeapFreeBlock *>(dataStart);
@@ -79,7 +79,7 @@ MEMCreateUnitHeapEx(virt_ptr<void> base,
       prev->next = nullptr;
    }
 
-   return heap;
+   return virt_cast<MEMHeapHeader *>(heap);
 }
 
 
@@ -102,7 +102,7 @@ MEMDestroyUnitHeap(MEMHeapHandle handle)
 /**
  * Allocate a memory block from a unit heap
  */
-void *
+virt_ptr<void>
 MEMAllocFromUnitHeap(MEMHeapHandle handle)
 {
    auto heap = virt_cast<MEMUnitHeap *>(handle);
@@ -119,11 +119,9 @@ MEMAllocFromUnitHeap(MEMHeapHandle handle)
    lock.unlock();
 
    if (block) {
-      auto heapAttribs = heap->header.attribs.value();
-
-      if (heapAttribs.zeroAllocated()) {
+      if (heap->header.flags & MEMHeapFlags::ZeroAllocated) {
          memset(block, 0, heap->blockSize);
-      } else if (heapAttribs.debugMode()) {
+      } else if (heap->header.flags & MEMHeapFlags::DebugMode) {
          auto value = MEMGetFillValForHeap(MEMHeapFillType::Allocated);
          memset(block, value, heap->blockSize);
       }
@@ -148,7 +146,7 @@ MEMFreeToUnitHeap(MEMHeapHandle handle,
       return;
    }
 
-   if (heap->header.attribs.value().debugMode()) {
+   if (heap->header.flags & MEMHeapFlags::DebugMode) {
       auto value = MEMGetFillValForHeap(MEMHeapFillType::Freed);
       memset(block, value, heap->blockSize);
    }
@@ -205,13 +203,14 @@ namespace internal
 void
 dumpUnitHeap(virt_ptr<MEMUnitHeap> heap)
 {
-   auto freeBlocks = MEMCountFreeBlockForUnitHeap(heap);
+   auto handle = virt_cast<MEMHeapHeader *>(heap);
+   auto freeBlocks = MEMCountFreeBlockForUnitHeap(handle);
    auto freeSize = heap->blockSize * freeBlocks;
    auto totalSize = heap->header.dataEnd - heap->header.dataStart;
    auto usedSize = totalSize - freeSize;
    auto percent = static_cast<float>(usedSize) / static_cast<float>(totalSize);
 
-   gLog->debug("MEMUnitHeap(0x{:8x})", mem::untranslate(heap));
+   gLog->debug("MEMUnitHeap(0x{:8x})", heap);
    gLog->debug("{} out of {} bytes ({}%) used", usedSize, totalSize, percent);
 }
 
@@ -220,12 +219,12 @@ dumpUnitHeap(virt_ptr<MEMUnitHeap> heap)
 void
 Library::registerMemUnitHeapFunctions()
 {
-   RegisterKernelFunction(MEMCreateUnitHeapEx);
-   RegisterKernelFunction(MEMDestroyUnitHeap);
-   RegisterKernelFunction(MEMAllocFromUnitHeap);
-   RegisterKernelFunction(MEMFreeToUnitHeap);
-   RegisterKernelFunction(MEMCountFreeBlockForUnitHeap);
-   RegisterKernelFunction(MEMCalcHeapSizeForUnitHeap);
+   RegisterFunctionExport(MEMCreateUnitHeapEx);
+   RegisterFunctionExport(MEMDestroyUnitHeap);
+   RegisterFunctionExport(MEMAllocFromUnitHeap);
+   RegisterFunctionExport(MEMFreeToUnitHeap);
+   RegisterFunctionExport(MEMCountFreeBlockForUnitHeap);
+   RegisterFunctionExport(MEMCalcHeapSizeForUnitHeap);
 }
 
 } // namespace cafe::coreinit
