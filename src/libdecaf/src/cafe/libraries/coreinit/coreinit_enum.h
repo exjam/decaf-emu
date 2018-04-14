@@ -318,6 +318,13 @@ ENUM_BEG(MEMHeapFillType, uint32_t)
    ENUM_VALUE(Max,                  0x3)
 ENUM_END(MEMHeapFillType)
 
+FLAGS_BEG(MEMHeapFlags, uint32_t)
+   FLAGS_VALUE(None,                0)
+   FLAGS_VALUE(ZeroAllocated,       1 << 0)
+   FLAGS_VALUE(DebugMode,           1 << 1)
+   FLAGS_VALUE(ThreadSafe,          1 << 2)
+FLAGS_END(MEMHeapFlags)
+
 FLAGS_BEG(MPTaskQueueState, uint32_t)
    FLAGS_VALUE(Initialised,         1 << 0)
    FLAGS_VALUE(Ready,               1 << 1)

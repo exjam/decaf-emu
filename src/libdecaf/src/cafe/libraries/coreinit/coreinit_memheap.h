@@ -17,12 +17,6 @@ namespace cafe::coreinit
 
 #pragma pack(push, 1)
 
-BITFIELD(MEMHeapAttribs, uint32_t)
-   BITFIELD_ENTRY(0, 1, bool, zeroAllocated);
-   BITFIELD_ENTRY(1, 1, bool, debugMode);
-   BITFIELD_ENTRY(2, 1, bool, useLock);
-BITFIELD_END
-
 struct MEMHeapHeader
 {
    //! Tag indicating which type of heap this is
@@ -44,7 +38,7 @@ struct MEMHeapHeader
    be2_struct<OSSpinLock> lock;
 
    //! Flags set during heap creation.
-   be2_val<MEMHeapAttribs> attribs;
+   be2_val<MEMHeapFlags> flags;
 
    UNKNOWN(0x0C);
 };
@@ -54,7 +48,7 @@ CHECK_OFFSET(MEMHeapHeader, 0x0C, list);
 CHECK_OFFSET(MEMHeapHeader, 0x18, dataStart);
 CHECK_OFFSET(MEMHeapHeader, 0x1C, dataEnd);
 CHECK_OFFSET(MEMHeapHeader, 0x20, lock);
-CHECK_OFFSET(MEMHeapHeader, 0x30, attribs);
+CHECK_OFFSET(MEMHeapHeader, 0x30, flags);
 CHECK_SIZE(MEMHeapHeader, 0x40);
 
 using MEMHeapHandle = virt_ptr<MEMHeapHeader>;
@@ -98,10 +92,8 @@ class HeapLock
 public:
    HeapLock(virt_ptr<MEMHeapHeader> header)
    {
-      auto attribs = header->attribs.value();
-
-      if (attribs.useLock()) {
-         OSUninterruptibleSpinLock_Acquire(&header->lock);
+      if (header->flags & MEMHeapFlags::ThreadSafe) {
+         OSUninterruptibleSpinLock_Acquire(virt_addrof(header->lock));
          mHeap = header;
       } else {
          mHeap = nullptr;
@@ -111,7 +103,7 @@ public:
    ~HeapLock()
    {
       if (mHeap) {
-         OSUninterruptibleSpinLock_Release(&mHeap->lock);
+         OSUninterruptibleSpinLock_Release(virt_addrof(mHeap->lock));
          mHeap = nullptr;
       }
    }
@@ -119,7 +111,7 @@ public:
    void unlock()
    {
       if (mHeap) {
-         OSUninterruptibleSpinLock_Release(&mHeap->lock);
+         OSUninterruptibleSpinLock_Release(virt_addrof(mHeap->lock));
          mHeap = nullptr;
       }
    }
@@ -134,7 +126,7 @@ registerHeap(virt_ptr<MEMHeapHeader> heap,
              MEMHeapTag tag,
              virt_ptr<uint8_t> dataStart,
              virt_ptr<uint8_t> dataEnd,
-             uint32_t flags);
+             MEMHeapFlags flags);
 
 void
 unregisterHeap(virt_ptr<MEMHeapHeader> heap);

@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <common/log.h>
 
 namespace cafe::coreinit
 {
@@ -33,21 +34,24 @@ static virt_ptr<MEMList>
 findListContainingHeap(virt_ptr<MEMHeapHeader> heap)
 {
    auto memHeapData = getMemHeapData();
-   StackObject<uint32_t> start, size, end;
+   StackObject<virt_addr> start, end;
+   StackObject<uint32_t> size;
    OSGetForegroundBucket(start, size);
-   end = start + size;
+   *end = *start + *size;
 
-   if (heap->dataStart >= start && heap->dataEnd <= end) {
-      return memHeapData->foregroundList;
+   if (virt_cast<virt_addr>(heap->dataStart) >= *start &&
+       virt_cast<virt_addr>(heap->dataEnd) <= *end) {
+      return virt_addrof(memHeapData->foregroundList);
+   }
+
+   OSGetMemBound(OSMemoryType::MEM1, start, size);
+   *end = *start + *size;
+
+   if (virt_cast<virt_addr>(heap->dataStart) >= *start &&
+       virt_cast<virt_addr>(heap->dataEnd) <= *end) {
+      return virt_addrof(memHeapData->mem1List);
    } else {
-      OSGetMemBound(OSMemoryType::MEM1, start, size);
-      end = start + size;
-
-      if (heap->dataStart >= start && heap->dataEnd <= end) {
-         return memHeapData->mem1List;
-      } else {
-         return memHeapData->mem2List;
-      }
+      return virt_addrof(memHeapData->mem2List);
    }
 }
 
@@ -55,21 +59,24 @@ static virt_ptr<MEMList>
 findListContainingBlock(virt_ptr<void> block)
 {
    auto memHeapData = getMemHeapData();
-   StackObject<uint32_t> start, size, end;
-   OSGetForegroundBucket(&start, &size);
-   end = start + size;
+   StackObject<virt_addr> start, end;
+   StackObject<uint32_t> size;
+   OSGetForegroundBucket(start, size);
+   *end = *start + *size;
 
-   if (block >= start && block <= end) {
-      return memHeapData->foregroundList;
+   if (virt_cast<virt_addr>(block) >= *start &&
+       virt_cast<virt_addr>(block) <= *end) {
+      return virt_addrof(memHeapData->foregroundList);
+   }
+
+   OSGetMemBound(OSMemoryType::MEM1, start, size);
+   *end = *start + *size;
+
+   if (virt_cast<virt_addr>(block) >= *start &&
+       virt_cast<virt_addr>(block) <= *end) {
+      return virt_addrof(memHeapData->mem1List);
    } else {
-      OSGetMemBound(OSMemoryType::MEM1, &start, &size);
-      end = start + size;
-
-      if (block >= start && block <= end) {
-         return memHeapData->mem1List;
-      } else {
-         return memHeapData->mem2List;
-      }
+      return virt_addrof(memHeapData->mem2List);
    }
 }
 
@@ -80,8 +87,9 @@ findHeapContainingBlock(virt_ptr<MEMList> list,
    virt_ptr<MEMHeapHeader> heap = nullptr;
 
    while ((heap = virt_cast<MEMHeapHeader *>(MEMGetNextListObject(list, heap)))) {
-      if (block >= heap->dataStart && block < heap->dataEnd) {
-         auto child = findHeapContainingBlock(&heap->list, block);
+      if (virt_cast<virt_addr>(block) >= virt_cast<virt_addr>(heap->dataStart) &&
+          virt_cast<virt_addr>(block) < virt_cast<virt_addr>(heap->dataEnd)) {
+         auto child = findHeapContainingBlock(virt_addrof(heap->list), block);
          return child ? child : heap;
       }
    }
@@ -102,7 +110,7 @@ MEMDumpHeap(virt_ptr<MEMHeapHeader> heap)
    case MEMHeapTag::FrameHeap:
    case MEMHeapTag::UserHeap:
    case MEMHeapTag::BlockHeap:
-      gLog->info("Unimplemented MEMDumpHeap type");
+      gLog->warn("Unimplemented MEMDumpHeap for tag {:08x}", heap->tag);
    }
 }
 
@@ -168,7 +176,7 @@ MEMCreateUserHeapHandle(virt_ptr<MEMHeapHeader> heap,
                           coreinit::MEMHeapTag::UserHeap,
                           dataStart,
                           dataEnd,
-                          0);
+                          MEMHeapFlags::None);
 
    return heap;
 }
@@ -224,7 +232,7 @@ registerHeap(virt_ptr<MEMHeapHeader> heap,
              MEMHeapTag tag,
              virt_ptr<uint8_t> dataStart,
              virt_ptr<uint8_t> dataEnd,
-             uint32_t flags)
+             MEMHeapFlags flags)
 {
    auto memHeapData = getMemHeapData();
 
@@ -232,11 +240,11 @@ registerHeap(virt_ptr<MEMHeapHeader> heap,
    heap->tag = tag;
    heap->dataStart = dataStart;
    heap->dataEnd = dataEnd;
-   heap->attribs = MEMHeapAttribs::get(flags);
+   heap->flags = flags;
 
-   if (heap->attribs.value().debugMode()) {
+   if (heap->flags & MEMHeapFlags::DebugMode) {
       auto fillVal = MEMGetFillValForHeap(MEMHeapFillType::Unused);
-      std::memset(dataStart, fillVal, dataEnd - dataStart);
+      memset(dataStart, fillVal, dataEnd - dataStart);
    }
 
    MEMInitList(virt_addrof(heap->list), offsetof(MEMHeapHeader, link));
