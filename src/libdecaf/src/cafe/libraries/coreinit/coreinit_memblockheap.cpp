@@ -1,8 +1,10 @@
 #include "coreinit.h"
 #include "coreinit_memheap.h"
 #include "coreinit_memblockheap.h"
+#include "coreinit_memory.h"
 
 #include <common/align.h>
+#include <common/log.h>
 
 namespace cafe::coreinit
 {
@@ -11,13 +13,14 @@ namespace cafe::coreinit
  * Initialise block heap.
  */
 MEMHeapHandle
-MEMInitBlockHeap(virt_ptr<MEMBlockHeap> heap,
+MEMInitBlockHeap(virt_ptr<void> base,
                  virt_ptr<void> start,
                  virt_ptr<void> end,
                  virt_ptr<MEMBlockHeapTracking> tracking,
                  uint32_t size,
                  uint32_t flags)
 {
+   auto heap = virt_cast<MEMBlockHeap *>(base);
    if (!heap || !start || !end || start >= end) {
       return nullptr;
    }
@@ -30,11 +33,11 @@ MEMInitBlockHeap(virt_ptr<MEMBlockHeap> heap,
                           MEMHeapTag::BlockHeap,
                           dataStart,
                           dataEnd,
-                          flags);
+                          static_cast<MEMHeapFlags>(flags));
 
    // Setup default tracker
    heap->defaultTrack.blockCount = 1;
-   heap->defaultTrack.tracking = &heap->defaultBlock;
+   heap->defaultTrack.blocks = virt_addrof(heap->defaultBlock);
 
    // Setup default block
    heap->defaultBlock.start = dataStart;
@@ -47,8 +50,9 @@ MEMInitBlockHeap(virt_ptr<MEMBlockHeap> heap,
    heap->firstBlock = virt_addrof(heap->defaultBlock);
    heap->lastBlock = virt_addrof(heap->defaultBlock);
 
-   MEMAddBlockHeapTracking(heap, tracking, size);
-   return virt_cast<MEMHeapHandle>(heap);
+   auto handle = virt_cast<MEMHeapHeader *>(heap);
+   MEMAddBlockHeapTracking(handle, tracking, size);
+   return handle;
 }
 
 
@@ -102,7 +106,7 @@ MEMAddBlockHeapTracking(MEMHeapHandle handle,
    }
 
    // Insert at start of block list
-   internal::HeapLock lock(&heap->header);
+   internal::HeapLock lock { virt_addrof(heap->header) };
    blocks[blockCount - 1].next = heap->firstFreeBlock;
    heap->firstFreeBlock = blocks;
    heap->numFreeBlocks += blockCount;
@@ -124,7 +128,7 @@ findBlockOwning(virt_ptr<MEMBlockHeap> heap,
       return nullptr;
    }
 
-   auto distFromEnd = heap->header.dataEnd.get() - addr;
+   auto distFromEnd = heap->header.dataEnd - addr;
    auto distFromStart = addr - heap->header.dataStart;
 
    if (distFromStart < distFromEnd) {
@@ -157,7 +161,7 @@ findBlockOwning(virt_ptr<MEMBlockHeap> heap,
 static bool
 allocInsideBlock(virt_ptr<MEMBlockHeap> heap,
                  virt_ptr<MEMBlockHeapBlock> block,
-                 virt_cast<uint8_t> start,
+                 virt_ptr<uint8_t> start,
                  uint32_t size)
 {
    // Ensure we are actually inside this block
@@ -233,11 +237,9 @@ allocInsideBlock(virt_ptr<MEMBlockHeap> heap,
    }
 
    // Set intial memory values
-   auto heapAttribs = heap->header.attribs.value();
-
-   if (heapAttribs.zeroAllocated()) {
+   if (heap->header.flags & MEMHeapFlags::ZeroAllocated) {
       memset(block->start, 0, size);
-   } else if (heapAttribs.debugMode()) {
+   } else if (heap->header.flags & MEMHeapFlags::DebugMode) {
       auto value = MEMGetFillValForHeap(MEMHeapFillType::Allocated);
       memset(block->start, value, size);
    }
@@ -265,17 +267,19 @@ MEMAllocFromBlockHeapAt(MEMHeapHandle handle,
       return nullptr;
    }
 
-   internal::HeapLock lock(&heap->header);
+   internal::HeapLock lock { virt_addrof(heap->header) };
 
    auto block = findBlockOwning(heap, addr);
 
    if (!block) {
-      gLog->warn("MEMAllocFromBlockHeapAt: Could not find block containing addr 0x{:08X}", mem::untranslate(addr));
+      gLog->warn("MEMAllocFromBlockHeapAt: Could not find block containing addr 0x{:08X}",
+                 addr);
       return nullptr;
    }
 
    if (!block->isFree) {
-      gLog->warn("MEMAllocFromBlockHeapAt: Requested address is not free 0x{:08X}", mem::untranslate(addr));
+      gLog->warn("MEMAllocFromBlockHeapAt: Requested address is not free 0x{:08X}",
+                 addr);
       return nullptr;
    }
 
@@ -304,7 +308,7 @@ MEMAllocFromBlockHeapEx(MEMHeapHandle handle,
       return nullptr;
    }
 
-   internal::HeapLock lock(&heap->header);
+   internal::HeapLock lock { virt_addrof(heap->header) };
 
    if (align == 0) {
       align = 4;
@@ -314,7 +318,7 @@ MEMAllocFromBlockHeapEx(MEMHeapHandle handle,
       // Find first free block with enough size
       for (block = heap->firstBlock; block; block = block->next) {
          if (block->isFree) {
-            alignedStart = align_up(block->start.get(), align);
+            alignedStart = align_up(block->start, align);
 
             if (alignedStart + size < block->end) {
                break;
@@ -325,7 +329,7 @@ MEMAllocFromBlockHeapEx(MEMHeapHandle handle,
       // Find last free block with enough size
       for (block = heap->lastBlock; block; block = block->prev) {
          if (block->isFree) {
-            alignedStart = align_down(block->end.get() - size, -align);
+            alignedStart = align_down(block->end - size, -align);
 
             if (alignedStart >= block->start) {
                break;
@@ -338,8 +342,8 @@ MEMAllocFromBlockHeapEx(MEMHeapHandle handle,
       gLog->warn("MEMAllocFromBlockHeapEx: Could not find free block size: 0x{:X} align: 0x{:X}, allocatable: 0x{:X} free: 0x{:X}",
                  size,
                  align,
-                 MEMGetAllocatableSizeForBlockHeapEx(heap, align),
-                 MEMGetTotalFreeSizeForBlockHeap(heap));
+                 MEMGetAllocatableSizeForBlockHeapEx(virt_cast<MEMHeapHeader *>(heap), align),
+                 MEMGetTotalFreeSizeForBlockHeap(virt_cast<MEMHeapHeader *>(heap)));
    } else if (allocInsideBlock(heap, block, alignedStart, size)) {
       result = alignedStart;
    }
@@ -360,11 +364,12 @@ MEMFreeToBlockHeap(MEMHeapHandle handle,
       return;
    }
 
-   internal::HeapLock lock(&heap->header);
+   internal::HeapLock lock { virt_addrof(heap->header) };
    auto block = findBlockOwning(heap, data);
 
    if (!block) {
-      gLog->warn("MEMFreeToBlockHeap: Could not find block containing data 0x{:08X}", mem::untranslate(data));
+      gLog->warn("MEMFreeToBlockHeap: Could not find block containing data 0x{:08X}",
+                 data);
       return;
    }
 
@@ -374,13 +379,14 @@ MEMFreeToBlockHeap(MEMHeapHandle handle,
    }
 
    if (block->start != data) {
-      gLog->warn("MEMFreeToBlockHeap: Tried to free block 0x{:08X} from middle 0x{:08X}", mem::untranslate(block->start), mem::untranslate(data));
+      gLog->warn("MEMFreeToBlockHeap: Tried to free block 0x{:08X} from middle 0x{:08X}",
+                 block->start, data);
       return;
    }
 
-   if (heap->header.attribs.value().debugMode()) {
+   if (heap->header.flags & MEMHeapFlags::DebugMode) {
       auto fill = MEMGetFillValForHeap(MEMHeapFillType::Freed);
-      auto size = block->end.get() - block->start.get();
+      auto size = block->end - block->start;
       memset(block->start, fill, size);
    }
 
@@ -439,7 +445,7 @@ MEMGetAllocatableSizeForBlockHeapEx(MEMHeapHandle handle,
       return 0;
    }
 
-   internal::HeapLock lock(&heap->header);
+   internal::HeapLock lock { virt_addrof(heap->header) };
    auto allocatableSize = 0u;
 
    // Adjust align
@@ -455,8 +461,8 @@ MEMGetAllocatableSizeForBlockHeapEx(MEMHeapHandle handle,
       }
 
       // Align start address and check it is still inside block
-      auto startAddr = block->start.getAddress();
-      auto endAddr = block->end.getAddress();
+      auto startAddr = block->start;
+      auto endAddr = block->end;
       auto alignedStart = align_up(startAddr, align);
 
       if (alignedStart >= endAddr) {
@@ -500,7 +506,7 @@ MEMGetTotalFreeSizeForBlockHeap(MEMHeapHandle handle)
       return 0;
    }
 
-   internal::HeapLock lock(&heap->header);
+   internal::HeapLock lock { virt_addrof(heap->header) };
    auto freeSize = 0u;
 
    for (auto block = heap->firstBlock; block; block = block->next) {
@@ -508,8 +514,8 @@ MEMGetTotalFreeSizeForBlockHeap(MEMHeapHandle handle)
          continue;
       }
 
-      auto startAddr = block->start.getAddress();
-      auto endAddr = block->end.getAddress();
+      auto startAddr = block->start;
+      auto endAddr = block->end;
       freeSize += endAddr - startAddr;
    }
 
@@ -519,15 +525,15 @@ MEMGetTotalFreeSizeForBlockHeap(MEMHeapHandle handle)
 void
 Library::registerMemBlockHeapFunctions()
 {
-   RegisterKernelFunction(MEMInitBlockHeap);
-   RegisterKernelFunction(MEMDestroyBlockHeap);
-   RegisterKernelFunction(MEMAddBlockHeapTracking);
-   RegisterKernelFunction(MEMAllocFromBlockHeapAt);
-   RegisterKernelFunction(MEMAllocFromBlockHeapEx);
-   RegisterKernelFunction(MEMFreeToBlockHeap);
-   RegisterKernelFunction(MEMGetAllocatableSizeForBlockHeapEx);
-   RegisterKernelFunction(MEMGetTrackingLeftInBlockHeap);
-   RegisterKernelFunction(MEMGetTotalFreeSizeForBlockHeap);
+   RegisterFunctionExport(MEMInitBlockHeap);
+   RegisterFunctionExport(MEMDestroyBlockHeap);
+   RegisterFunctionExport(MEMAddBlockHeapTracking);
+   RegisterFunctionExport(MEMAllocFromBlockHeapAt);
+   RegisterFunctionExport(MEMAllocFromBlockHeapEx);
+   RegisterFunctionExport(MEMFreeToBlockHeap);
+   RegisterFunctionExport(MEMGetAllocatableSizeForBlockHeapEx);
+   RegisterFunctionExport(MEMGetTrackingLeftInBlockHeap);
+   RegisterFunctionExport(MEMGetTotalFreeSizeForBlockHeap);
 }
 
 } // cafe::coreinit

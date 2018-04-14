@@ -89,7 +89,7 @@ CHECK_SIZE(MEMBlockHeap, 0x74);
 #pragma pack(pop)
 
 MEMHeapHandle
-MEMInitBlockHeap(MEMHeapHandle handle,
+MEMInitBlockHeap(virt_ptr<void> base,
                  virt_ptr<void> start,
                  virt_ptr<void> end,
                  virt_ptr<MEMBlockHeapTracking> tracking,
