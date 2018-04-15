@@ -64,13 +64,13 @@ defaultFreeToDefaultHeap(virt_ptr<void> block)
    return MEMFreeToExpHeap(defaultHeapData->defaultHeapHandle, block);
 }
 
-static OSDynLoadError
+static OSDynLoad_Error
 defaultDynLoadAlloc(int32_t size,
                     int32_t align,
                     virt_ptr<virt_ptr<void>> outPtr)
 {
    if (!outPtr) {
-      return OSDynLoadError::InvalidAllocatorPtr;
+      return OSDynLoad_Error::InvalidAllocatorPtr;
    }
 
    if (align >= 0 && align < 4) {
@@ -83,10 +83,10 @@ defaultDynLoadAlloc(int32_t size,
    *outPtr = ptr;
 
    if (!ptr) {
-      return OSDynLoadError::OutOfMemory;
+      return OSDynLoad_Error::OutOfMemory;
    }
 
-   return OSDynLoadError::OK;
+   return OSDynLoad_Error::OK;
 }
 
 static void
