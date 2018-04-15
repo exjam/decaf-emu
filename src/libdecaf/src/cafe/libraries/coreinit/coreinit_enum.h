@@ -56,6 +56,13 @@ ENUM_BEG(OSDeviceID, uint32_t)
    ENUM_VALUE(LEGACY_EXI,           15)
 ENUM_END(OSDeviceID)
 
+ENUM_BEG(OSDynLoadError, uint32_t)
+   ENUM_VALUE(OK,       0)
+   ENUM_VALUE(OutOfMemory,          0xBAD10002)
+   ENUM_VALUE(InvalidAllocatorPtr,  0xBAD10017)
+   ENUM_VALUE(TLSAllocatorLocked,   0xBAD10031)
+ENUM_END(OSDynLoadError)
+
 ENUM_BEG(OSEventMode, uint32_t)
    //! A manual event will only reset when OSResetEvent is called.
    ENUM_VALUE(ManualReset,          0)

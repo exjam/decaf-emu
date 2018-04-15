@@ -14,6 +14,7 @@ struct StaticClipboardData;
 struct StaticDefaultHeapData;
 struct StaticDeviceData;
 struct StaticDriverData;
+struct StaticDynLoadData;
 struct StaticEventData;
 struct StaticFsData;
 struct StaticFsClientData;
@@ -43,6 +44,7 @@ struct LibraryStaticData
    virt_ptr<StaticDefaultHeapData> defaultHeapData;
    virt_ptr<StaticDeviceData> deviceData;
    virt_ptr<StaticDriverData> driverData;
+   virt_ptr<StaticDynLoadData> dynLoadData;
    virt_ptr<StaticEventData> eventData;
    virt_ptr<StaticFsData> fsData;
    virt_ptr<StaticFsClientData> fsClientData;
@@ -89,6 +91,7 @@ protected:
    void registerCoroutineFunctions();
    void registerDeviceFunctions();
    void registerDriverFunctions();
+   void registerDynLoadExports();
    void registerEventFunctions();
    void registerFastMutexFunctions();
    void registerFiberExports();
@@ -135,6 +138,7 @@ protected:
    void initialiseDefaultHeapStaticData();
    void initialiseDeviceStaticData();
    void initialiseDriverStaticData();
+   void initialiseDynLoadStaticData();
    void initialiseEventStaticData();
    void initialiseFsStaticData();
    void initialiseFsClientStaticData();
