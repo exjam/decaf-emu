@@ -27,6 +27,7 @@ struct StaticLockedCacheData;
 struct StaticMcpData;
 struct StaticMemHeapData;
 struct StaticSchedulerData;
+struct StaticSystemHeapData;
 struct StaticSystemInfoData;
 struct StaticThreadData;
 struct StaticUserConfigData;
@@ -54,6 +55,7 @@ struct LibraryStaticData
    virt_ptr<StaticMcpData> mcpData;
    virt_ptr<StaticMemHeapData> memHeapData;
    virt_ptr<StaticSchedulerData> schedulerData;
+   virt_ptr<StaticSystemHeapData> systemHeapData;
    virt_ptr<StaticSystemInfoData> systemInfoData;
    virt_ptr<StaticThreadData> threadData;
    virt_ptr<StaticUserConfigData> userConfigData;
@@ -117,6 +119,7 @@ protected:
    void registerSemaphoreFunctions();
    void registerSpinLockFunctions();
    void registerSystemInfoExports();
+   void registerSystemHeapExports();
    void registerTaskQueueExports();
    void registerTimeExports();
    void registerUserConfigFunctions();
@@ -142,6 +145,7 @@ protected:
    void initialiseMemHeapStaticData();
    void initialiseSchedulerStaticData();
    void initialiseSystemInfoStaticData();
+   void initialiseSystemHeapStaticData();
    void initialiseUserConfigStaticData();
 
    void initialiseClock();
