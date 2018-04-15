@@ -1,4 +1,5 @@
 #include "coreinit.h"
+#include "coreinit_dynload.h"
 #include "coreinit_memdefaultheap.h"
 #include "coreinit_memexpheap.h"
 #include "coreinit_memframeheap.h"
@@ -26,6 +27,9 @@ struct StaticDefaultHeapData
    be2_val<MEMAllocFromDefaultHeapFn> defaultAllocFromDefaultHeap;
    be2_val<MEMAllocFromDefaultHeapExFn> defaultAllocFromDefaultHeapEx;
    be2_val<MEMFreeToDefaultHeapFn> defaultFreeToDefaultHeap;
+
+   be2_val<OSDynLoad_AllocFn> defaultDynLoadAlloc;
+   be2_val<OSDynLoad_FreeFn> defaultDynLoadFree;
 
    be2_val<MEMAllocFromDefaultHeapFn> allocFromDefaultHeap;
    be2_val<MEMAllocFromDefaultHeapExFn> allocFromDefaultHeapEx;
@@ -60,14 +64,35 @@ defaultFreeToDefaultHeap(virt_ptr<void> block)
    return MEMFreeToExpHeap(defaultHeapData->defaultHeapHandle, block);
 }
 
-static void
-defaultDynLoadAlloc()
+static OSDynLoadError
+defaultDynLoadAlloc(int32_t size,
+                    int32_t align,
+                    virt_ptr<virt_ptr<void>> outPtr)
 {
+   if (!outPtr) {
+      return OSDynLoadError::InvalidAllocatorPtr;
+   }
+
+   if (align >= 0 && align < 4) {
+      align = 4;
+   } else if (align < 0 && align > -4) {
+      align = -4;
+   }
+
+   auto ptr = MEMAllocFromDefaultHeapEx(size, align);
+   *outPtr = ptr;
+
+   if (!ptr) {
+      return OSDynLoadError::OutOfMemory;
+   }
+
+   return OSDynLoadError::OK;
 }
 
 static void
-defaultDynLoadFree()
+defaultDynLoadFree(virt_ptr<void> ptr)
 {
+   MEMFreeToDefaultHeap(ptr);
 }
 
 void
@@ -99,14 +124,17 @@ CoreInitDefaultHeap(virt_ptr<MEMHeapHandle> outHeapHandleMEM1,
    }
 
    OSGetMemBound(OSMemoryType::MEM2, addr, size);
-   defaultHeapData->defaultHeapHandle = MEMCreateExpHeapEx(virt_cast<void *>(*addr), *size, MEMHeapAttribs::get(0).useLock(true));
+   defaultHeapData->defaultHeapHandle =
+      MEMCreateExpHeapEx(virt_cast<void *>(*addr),
+                         *size,
+                         MEMHeapFlags::ThreadSafe);
    *outHeapHandleMEM2 = defaultHeapData->defaultHeapHandle;
 
-   OSDynLoad_SetAllocator(GetInternalFunctionAddress(defaultDynLoadAlloc),
-                          GetInternalFunctionAddress(defaultDynLoadFree));
+   OSDynLoad_SetAllocator(defaultHeapData->defaultDynLoadAlloc,
+                          defaultHeapData->defaultDynLoadFree);
 
-   OSDynLoad_SetTLSAllocator(GetInternalFunctionAddress(defaultDynLoadAlloc),
-                             GetInternalFunctionAddress(defaultDynLoadFree));
+   OSDynLoad_SetTLSAllocator(defaultHeapData->defaultDynLoadAlloc,
+                             defaultHeapData->defaultDynLoadFree);
 }
 
 virt_ptr<void>
@@ -155,6 +183,8 @@ Library::initialiseDefaultHeapStaticData()
    defaultHeapData->defaultAllocFromDefaultHeap = GetInternalFunctionAddress(defaultAllocFromDefaultHeap);
    defaultHeapData->defaultAllocFromDefaultHeapEx = GetInternalFunctionAddress(defaultAllocFromDefaultHeapEx);
    defaultHeapData->defaultFreeToDefaultHeap = GetInternalFunctionAddress(defaultFreeToDefaultHeap);
+   defaultHeapData->defaultDynLoadAlloc = GetInternalFunctionAddress(defaultDynLoadAlloc);
+   defaultHeapData->defaultDynLoadFree = GetInternalFunctionAddress(defaultDynLoadFree);
 }
 
 void
