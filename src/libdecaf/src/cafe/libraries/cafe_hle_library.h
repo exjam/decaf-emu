@@ -121,10 +121,10 @@ protected:
    registerDataExport(const char *name,
                       virt_ptr<DataType> data)
    {
-      auto symbol = new LibraryDataSymbol { };
+      auto symbol = std::make_unique<LibraryDataSymbol>();
       symbol->exported = true;
       symbol->ptr = data;
-      registerSymbol(name, { symbol });
+      registerSymbol(name, std::move(symbol));
    }
 
    void
