@@ -166,7 +166,7 @@ protected:
    allocStaticData()
    {
       auto buffer = allocStaticData(sizeof(Type), alignof(Type));
-      auto data = virt_cast<Type>(buffer);
+      auto data = virt_cast<Type *>(buffer);
       std::uninitialized_default_construct_n(data.getRawPointer(), 1);
       return data;
    }
