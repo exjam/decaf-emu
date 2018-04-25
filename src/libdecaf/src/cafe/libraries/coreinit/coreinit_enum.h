@@ -41,6 +41,7 @@ ENUM_BEG(OSAppFlagsDebugLevel, uint32_t)
    ENUM_VALUE(Error,                0)
    ENUM_VALUE(Warn,                 1)
    ENUM_VALUE(Info,                 2)
+   ENUM_VALUE(Unknown3,             3)
    ENUM_VALUE(Verbose,              7)
 ENUM_END(OSAppFlagsDebugLevel)
 

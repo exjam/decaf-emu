@@ -81,6 +81,9 @@ namespace internal
 bool
 isAppDebugLevelVerbose();
 
+bool
+isAppDebugLevelUnknown3();
+
 } // namespace internal
 
 } // namespace cafe::coreinit

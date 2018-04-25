@@ -130,6 +130,13 @@ isAppDebugLevelVerbose()
       .debugLevel() >= OSAppFlagsDebugLevel::Verbose;
 }
 
+bool
+isAppDebugLevelUnknown3()
+{
+   return getSystemInfoData()->appFlags.value()
+      .debugLevel() >= OSAppFlagsDebugLevel::Unknown3;
+}
+
 } // namespace internal
 
 void
