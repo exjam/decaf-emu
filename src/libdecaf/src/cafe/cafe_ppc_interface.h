@@ -64,7 +64,7 @@ template<typename T>
 struct register_type<T, typename std::enable_if<std::is_void<T>::value>::type>
 {
    static constexpr auto value = RegisterType::Void;
-   static constexpr auto return_index = -1;
+   static constexpr auto return_index = 0;
 };
 
 template<typename T>
@@ -159,7 +159,7 @@ struct get_param_infos_impl<GprIndex, FprIndex, Head, Tail...>
 template<std::size_t GprIndex, std::size_t FprIndex>
 struct get_param_infos_impl<GprIndex, FprIndex>
 {
-   using type = void;
+   using type = std::tuple<>;
 };
 
 // Stores information about a function

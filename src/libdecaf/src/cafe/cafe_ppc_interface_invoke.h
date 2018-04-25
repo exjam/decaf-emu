@@ -17,7 +17,7 @@ readParam(cpu::Core *core,
 {
    if constexpr (regType == RegisterType::Gpr32) {
       if constexpr (is_virt_ptr<ArgType>::value) {
-         return virt_cast<ArgType::value_type *>(static_cast<virt_addr>(core->gpr[regIndex]));
+         return virt_cast<typename ArgType::value_type *>(static_cast<virt_addr>(core->gpr[regIndex]));
       } else {
          return static_cast<ArgType>(core->gpr[regIndex]);
       }
@@ -29,14 +29,14 @@ readParam(cpu::Core *core,
 }
 
 template<typename ArgType, RegisterType regType, std::size_t regIndex>
-inline ArgType
+inline void
 writeParam(cpu::Core *core,
            param_info_t<ArgType, regType, regIndex>,
            ArgType &&value)
 {
    if constexpr (regType == RegisterType::Gpr32) {
       if constexpr (is_virt_ptr<ArgType>::value) {
-         core->gpr[regIndex] = virt_cast<virt_addr>(value);
+         core->gpr[regIndex] = static_cast<uint32_t>(virt_cast<virt_addr>(value));
       } else {
          core->gpr[regIndex] = static_cast<uint32_t>(value);
       }
@@ -55,18 +55,28 @@ invoke_host_impl(cpu::Core *core,
                  FunctionTraitsType &&,
                  std::index_sequence<I...>)
 {
-   auto param_info = FunctionTraitsType::param_info { };
-   auto return_info = FunctionTraitsType::return_info { };
+   auto param_info = typename FunctionTraitsType::param_info { };
 
-   if constexpr (FunctionTraitsType::is_member_function) {
-      auto obj = readParam(core, FunctionTraitsType::object_info { });
-      writeParam(core,
-                 return_info,
-                 (obj.getRawPointer()->*func)(readParam(core, std::get<I>(param_info))...));
+   if constexpr (FunctionTraitsType::has_return_value) {
+      auto return_info = typename FunctionTraitsType::return_info { };
+
+      if constexpr (FunctionTraitsType::is_member_function) {
+         auto obj = readParam(core, typename FunctionTraitsType::object_info { });
+         writeParam(core,
+                    return_info,
+                    (obj.getRawPointer()->*func)(readParam(core, std::get<I>(param_info))...));
+      } else {
+         writeParam(core,
+                    return_info,
+                    func(readParam(core, std::get<I>(param_info))...));
+      }
    } else {
-      writeParam(core,
-                 return_info,
-                 func(readParam(core, std::get<I>(param_info))...));
+      if constexpr (FunctionTraitsType::is_member_function) {
+         auto obj = readParam(core, typename FunctionTraitsType::object_info { });
+         (obj.getRawPointer()->*func)(readParam(core, std::get<I>(param_info))...);
+      } else {
+         func(readParam(core, std::get<I>(param_info))...);
+      }
    }
 }
 
@@ -80,13 +90,8 @@ invoke_guest_impl(cpu::Core *core,
 {
    if constexpr (FunctionTraitsType::num_args > 0) {
       // Write arguments to registers
-      auto param_info = FunctionTraitsType::param_info { };
-      // TODO: Once we have fold expressions in MSVC
-      //(writeParam(core, std::get<I>(param_info), std::forward<ArgTypes>(args)), ...);
-      using expander = int[];
-      (void)expander {
-         0, (void(writeParam(core, std::get<I>(param_info), std::forward<ArgTypes>(args))), 0)...
-      };
+      auto param_info = typename FunctionTraitsType::param_info { };
+      (writeParam(core, std::get<I>(param_info), std::forward<ArgTypes>(args)), ...);
    }
 
    // Save a stack pointer so we can compare after to ensure no stack overflow
@@ -124,7 +129,7 @@ invoke_guest_impl(cpu::Core *core,
 
    // Return the result
    if constexpr (FunctionTraitsType::has_return_value) {
-      return readParam(core, FunctionTraitsType::return_info { });
+      return readParam(core, typename FunctionTraitsType::return_info { });
    }
 }
 
