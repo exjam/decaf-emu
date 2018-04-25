@@ -104,8 +104,8 @@ initialiseSystemHeap(virt_ptr<void> base,
    systempHeapData->handle = MEMCreateExpHeapEx(base,
                                                 size,
                                                 MEMHeapFlags::ThreadSafe);
-   systempHeapData->numAllocs = 0;
-   systempHeapData->numFrees = 0;
+   systempHeapData->numAllocs = 0u;
+   systempHeapData->numFrees = 0u;
    OSMemoryBarrier();
 }
 
