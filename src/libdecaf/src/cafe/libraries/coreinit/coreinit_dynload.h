@@ -26,8 +26,29 @@ using OSDynLoad_NotifyCallbackFn = virt_func_ptr<
 struct OSDynLoad_NotifyData
 {
    be2_virt_ptr<char> name;
-   UNKNOWN(0x24);
+
+   be2_val<virt_addr> codeStart;
+   be2_val<uint32_t> codeOffset;
+   be2_val<uint32_t> codeSize;
+
+   be2_val<virt_addr> dataStart;
+   be2_val<uint32_t> dataOffset;
+   be2_val<uint32_t> dataSize;
+
+   be2_val<virt_addr> rodataStart;
+   be2_val<uint32_t> rodataOffset;
+   be2_val<uint32_t> rodataSize;
 };
+CHECK_OFFSET(OSDynLoad_NotifyData, 0x00, name);
+CHECK_OFFSET(OSDynLoad_NotifyData, 0x04, codeStart);
+CHECK_OFFSET(OSDynLoad_NotifyData, 0x08, codeOffset);
+CHECK_OFFSET(OSDynLoad_NotifyData, 0x0C, codeSize);
+CHECK_OFFSET(OSDynLoad_NotifyData, 0x10, dataStart);
+CHECK_OFFSET(OSDynLoad_NotifyData, 0x14, dataOffset);
+CHECK_OFFSET(OSDynLoad_NotifyData, 0x18, dataSize);
+CHECK_OFFSET(OSDynLoad_NotifyData, 0x1C, rodataStart);
+CHECK_OFFSET(OSDynLoad_NotifyData, 0x20, rodataOffset);
+CHECK_OFFSET(OSDynLoad_NotifyData, 0x24, rodataSize);
 CHECK_SIZE(OSDynLoad_NotifyData, 0x28);
 
 struct OSDynLoad_NotifyCallback
@@ -62,5 +83,17 @@ OSDynLoad_GetTLSAllocator(virt_ptr<OSDynLoad_AllocFn> outAllocFn,
 OSDynLoad_Error
 OSDynLoad_SetTLSAllocator(OSDynLoad_AllocFn allocFn,
                           OSDynLoad_FreeFn freeFn);
+
+OSDynLoad_Error
+OSDynLoad_Acquire(virt_ptr<char> modulePath,
+                  virt_ptr<OSDynLoad_ModuleHandle> outModuleHandle);
+
+OSDynLoad_Error
+OSDynLoad_AcquireContainingModule(virt_ptr<void> ptr,
+                                  OSDynLoad_SectionType sectionType,
+                                  virt_ptr<OSDynLoad_ModuleHandle> outHandle);
+
+OSDynLoad_Error
+OSDynLoad_Release(OSDynLoad_ModuleHandle moduleHandle);
 
 } // namespace cafe::coreinit

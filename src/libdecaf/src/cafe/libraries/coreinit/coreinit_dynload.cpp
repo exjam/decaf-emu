@@ -189,6 +189,24 @@ OSDynLoad_SetTLSAllocator(OSDynLoad_AllocFn allocFn,
    return OSDynLoad_Error::OK;
 }
 
+OSDynLoad_Error
+OSDynLoad_Acquire(virt_ptr<char> modulePath,
+                  virt_ptr<OSDynLoad_ModuleHandle> outModuleHandle)
+{
+}
+
+OSDynLoad_Error
+OSDynLoad_AcquireContainingModule(virt_ptr<void> ptr,
+                                  OSDynLoad_SectionType sectionType,
+                                  virt_ptr<OSDynLoad_ModuleHandle> outHandle)
+{
+   return OSDynLoad_Error::OK;
+}
+
+OSDynLoad_Error
+OSDynLoad_Release(OSDynLoad_ModuleHandle moduleHandle)
+{
+}
 
 void
 Library::initialiseDynLoadStaticData()
