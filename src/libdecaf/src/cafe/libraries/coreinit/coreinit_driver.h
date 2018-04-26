@@ -1,4 +1,6 @@
 #pragma once
+#include "coreinit_dynload.h"
+#include "coreinit_enum.h"
 #include <libcpu/be2_struct.h>
 
 namespace cafe::coreinit
@@ -6,11 +8,13 @@ namespace cafe::coreinit
 
 #pragma pack(push, 1)
 
-using OSDriver_GetNameFn = virt_func_ptr<virt_ptr<const char>()>;
-using OSDriver_OnInitFn = virt_func_ptr<void(virt_ptr<void>)>;
-using OSDriver_OnAcquiredForegroundFn = virt_func_ptr<void(virt_ptr<void>)>;
-using OSDriver_OnReleasedForegroundFn = virt_func_ptr<void(virt_ptr<void>)>;
-using OSDriver_OnDoneFn = virt_func_ptr<void(virt_ptr<void>)>;
+using OSDriver_UserDriverId = uint32_t;
+
+using OSDriver_GetNameFn = virt_func_ptr<virt_ptr<const char>(OSDriver_UserDriverId)>;
+using OSDriver_OnInitFn = virt_func_ptr<void(OSDriver_UserDriverId)>;
+using OSDriver_OnAcquiredForegroundFn = virt_func_ptr<void(OSDriver_UserDriverId)>;
+using OSDriver_OnReleasedForegroundFn = virt_func_ptr<void(OSDriver_UserDriverId)>;
+using OSDriver_OnDoneFn = virt_func_ptr<void(OSDriver_UserDriverId)>;
 
 struct OSDriverInterface
 {
@@ -33,20 +37,19 @@ struct OSDriverInterface
 struct OSDriver
 {
    //! Module handle of current RPL.
-   be2_val<uint32_t> moduleHandle;
+   be2_val<OSDynLoad_ModuleHandle> moduleHandle;
 
-   //! Value set from r6 of OSDriver_Register.
    //! First argument passed to all driver interface functions.
-   be2_virt_ptr<void> userData;
+   be2_val<OSDriver_UserDriverId> userDriverId;
 
-   //! Set to 1 in OSDriver_Register.
+   //! Unknown, set to 1 in OSDriver_Register.
    be2_val<uint32_t> unk0x08;
 
    //! Whether OSDriver_Register was called when process is in foreground.
    be2_val<BOOL> inForeground;
 
-   //! Value set from r4 of OSDriver_Register.
-   be2_val<uint32_t> unk_r4_OSDriver_Register;
+   //! Unknown, value set from r4 of OSDriver_Register.
+   be2_val<uint32_t> unk0x10;
 
    //!Core on which OSDriver_Register was called.
    be2_val<uint32_t> coreID;
@@ -55,22 +58,22 @@ struct OSDriver
    be2_struct<OSDriverInterface> interfaceFunctions;
 
    //! Module handles for each interface function.
-   be2_array<uint32_t, 5> interfaceModuleHandles;
+   be2_array<OSDynLoad_ModuleHandle, 5> interfaceModuleHandles;
 
-   //! Pointer to this passed as r5 to syscall 0x3200.
+   //! Unknown, pointer to this passed as r5 to syscall 0x3200.
    be2_val<uint32_t> unk0x40;
 
-   //! Pointer to this passed as r6 to syscall 0x3200.
+   //! Unknown, pointer to this passed as r6 to syscall 0x3200.
    be2_val<uint32_t> unk0x44;
 
    //! Pointer to next OSDriver in linked list.
    be2_virt_ptr<OSDriver> next;
 };
 CHECK_OFFSET(OSDriver, 0x00, moduleHandle);
-CHECK_OFFSET(OSDriver, 0x04, userData);
+CHECK_OFFSET(OSDriver, 0x04, userDriverId);
 CHECK_OFFSET(OSDriver, 0x08, unk0x08);
 CHECK_OFFSET(OSDriver, 0x0C, inForeground);
-CHECK_OFFSET(OSDriver, 0x10, unk_r4_OSDriver_Register);
+CHECK_OFFSET(OSDriver, 0x10, unk0x10);
 CHECK_OFFSET(OSDriver, 0x14, coreID);
 CHECK_OFFSET(OSDriver, 0x18, interfaceFunctions);
 CHECK_OFFSET(OSDriver, 0x2C, interfaceModuleHandles);
@@ -81,17 +84,17 @@ CHECK_SIZE(OSDriver, 0x4C);
 
 #pragma pack(pop)
 
-BOOL
-OSDriver_Register(uint32_t moduleHandle, // TODO: Change type to dynload module handle
-                  uint32_t inUnk1,
-                  virt_ptr<OSDriverInterface> interface,
-                  virt_ptr<void> userData,
+OSDriver_Error
+OSDriver_Register(OSDynLoad_ModuleHandle moduleHandle,
+                  uint32_t unk1,
+                  virt_ptr<OSDriverInterface> driverInterface,
+                  OSDriver_UserDriverId userDriverId,
                   virt_ptr<uint32_t> outUnk1,
                   virt_ptr<uint32_t> outUnk2,
-                  virt_ptr<uint32_t> outUnk3);
+                  virt_ptr<BOOL> outDidOSDriverInit);
 
-BOOL
-OSDriver_Deregister(uint32_t moduleHandle,
-                    virt_ptr<void> userData);
+OSDriver_Error
+OSDriver_Deregister(OSDynLoad_ModuleHandle moduleHandle,
+                    OSDriver_UserDriverId userDriverId);
 
 } // namespace cafe::coreinit
