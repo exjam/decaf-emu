@@ -182,6 +182,13 @@ nsToTicks(OSTimeNanoseconds nanoseconds)
    return (static_cast<uint64_t>(nanoseconds) * (timerSpeed / 31250)) / 32000;
 }
 
+OSTimeMilliseconds
+ticksToMs(OSTick ticks)
+{
+   auto timerSpeed = static_cast<uint64_t>(OSGetSystemInfo()->busSpeed / 4);
+   return (static_cast<OSTimeMilliseconds>(ticks) * 1000) / timerSpeed;
+}
+
 OSTime
 getBaseTime()
 {

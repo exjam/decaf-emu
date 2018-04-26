@@ -86,6 +86,9 @@ usToTicks(OSTimeMicroseconds microseconds);
 OSTime
 nsToTicks(OSTimeNanoseconds nanoseconds);
 
+OSTimeMilliseconds
+ticksToMs(OSTick ticks);
+
 OSTime
 getBaseTime();
 
