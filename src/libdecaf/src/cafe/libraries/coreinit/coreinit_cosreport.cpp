@@ -16,7 +16,7 @@ COSVReport(COSReportModule module,
    StackArray<char, 128> buffer;
    std::vsnprintf(buffer.getRawPointer(), 128, fmt, va);
 
-   // TODO: This basically ends up in OSConsoleWrite
+   // TODO: COSVReport, this ends up in OSConsoleWrite
 }
 
 
