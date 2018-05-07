@@ -16,7 +16,7 @@ LiLoadAsync(std::string_view name,
             virt_ptr<void> outBuffer,
             uint32_t outBufferSize,
             uint32_t pos,
-            ios::mcp::MCPLibraryType libraryType,
+            ios::mcp::MCPFileType fileType,
             cafe::kernel::RamProcessId rampid);
 
 ios::Error

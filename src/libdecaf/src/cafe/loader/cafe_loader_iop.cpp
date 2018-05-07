@@ -108,12 +108,12 @@ LiLoadAsync(std::string_view name,
             virt_ptr<void> outBuffer,
             uint32_t outBufferSize,
             uint32_t pos,
-            MCPLibraryType libraryType,
+            MCPFileType fileType,
             RamProcessId rampid)
 {
-   auto request = virt_cast<MCPRequestLoadLibraryChunk *>(iop_percore_malloc(sizeof(MCPRequestLoadLibraryChunk)));
+   auto request = virt_cast<MCPRequestLoadFile *>(iop_percore_malloc(sizeof(MCPRequestLoadFile)));
    request->pos = pos;
-   request->type = libraryType;
+   request->fileType = fileType;
    request->cafeProcessId = static_cast<uint32_t>(rampid);
    request->name = name;
 
@@ -123,8 +123,8 @@ LiLoadAsync(std::string_view name,
    sIopData->loadReply.error = ios::Error::InvalidArg;
 
    auto error = IPCLDriver_IoctlAsync(sIopData->mcpHandle,
-                                      MCPCommand::LoadLibraryChunk,
-                                      request, sizeof(MCPRequestLoadLibraryChunk),
+                                      MCPCommand::LoadFile,
+                                      request, sizeof(MCPRequestLoadFile),
                                       outBuffer, outBufferSize,
                                       &Loader_AsyncCallback,
                                       virt_addrof(sIopData->loadReply));

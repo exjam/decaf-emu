@@ -286,7 +286,7 @@ struct RPLBasics
    be2_val<uint32_t> fileReadSize;
    be2_val<uint32_t> fileOffset;
    be2_val<uint32_t> upcomingFileOffset;
-   be2_val<ios::mcp::MCPLibraryType> fileType;
+   be2_val<ios::mcp::MCPFileType> fileType;
    be2_val<uint32_t> unk0x90;
    be2_virt_ptr<void> chunkBuffer;
    UNKNOWN(0xAC - 0x98);
@@ -343,7 +343,7 @@ struct RPLBasicsLoadArgs
    be2_val<uint32_t> pathNameLen;
    be2_virt_ptr<char> pathName;
    UNKNOWN(0x4);
-   be2_val<ios::mcp::MCPLibraryType> fileType;
+   be2_val<ios::mcp::MCPFileType> fileType;
    be2_virt_ptr<void> chunkBuffer;
    be2_val<uint32_t> chunkBufferSize;
    be2_val<uint32_t> fileOffset;
@@ -362,7 +362,7 @@ CHECK_SIZE(RPLBasicsLoadArgs, 0x28);
 
 void
 LiSetFatalError(uint32_t baseError,
-                ios::mcp::MCPLibraryType fileType,
+                ios::mcp::MCPFileType fileType,
                 uint32_t unk,
                 std::string_view function,
                 uint32_t line)
@@ -408,7 +408,7 @@ LiCacheLineCorrectAllocEx(virt_ptr<TinyHeap> heap,
                           uint32_t /*unused*/,
                           uint32_t *outAllocSize,
                           uint32_t *outLargestFree,
-                          ios::mcp::MCPLibraryType fileType)
+                          ios::mcp::MCPFileType fileType)
 {
    auto fromEnd = false;
    textSize = align_up(textSize, 128);
@@ -446,7 +446,7 @@ LiCacheLineCorrectAllocEx(virt_ptr<TinyHeap> heap,
                           uint32_t unused,
                           virt_ptr<uint32_t> outAllocSize,
                           uint32_t *outLargestFree,
-                          ios::mcp::MCPLibraryType fileType)
+                          ios::mcp::MCPFileType fileType)
 {
    virt_ptr<void> tmpPtr;
    uint32_t tmpAllocSize;
@@ -710,7 +710,7 @@ LiLoadRPLBasics(virt_ptr<char> moduleName,
    struct LoadAttemptErrorData
    {
       int32_t error;
-      ios::mcp::MCPLibraryType fileType;
+      ios::mcp::MCPFileType fileType;
       uint32_t fatalErr;
       virt_ptr<char> fatalFunction;
       uint32_t fatalLine;
@@ -741,11 +741,11 @@ LiLoadRPLBasics(virt_ptr<char> moduleName,
          }
 
          if (loadAttempt == 0) {
-            if (loadArgs->fileType == ios::mcp::MCPLibraryType::Executable) {
-               loadArgs->fileType = ios::mcp::MCPLibraryType::CafeOS;
+            if (loadArgs->fileType == ios::mcp::MCPFileType::ProcessCode) {
+               loadArgs->fileType = ios::mcp::MCPFileType::CafeOS;
             }
          } else {
-            loadArgs->fileType = ios::mcp::MCPLibraryType::Unknown3;
+            loadArgs->fileType = ios::mcp::MCPFileType::SystemDataCode;
          }
 
          LiInitBuffer(false);
@@ -1426,7 +1426,7 @@ sLoadOneShared(std::string_view pathName)
    LiInitBuffer(false);
 
    auto error = LiBounceOneChunk(pathName,
-                                 ios::mcp::MCPLibraryType::CafeOS,
+                                 ios::mcp::MCPFileType::CafeOS,
                                  kernel::UniqueProcessId::Kernel,
                                  chunkSize,
                                  0,
@@ -1453,7 +1453,7 @@ sLoadOneShared(std::string_view pathName)
    rplBasicLoadArgs.chunkBufferSize = *chunkSize;
    rplBasicLoadArgs.readHeapTracking = sData->gpSharedReadHeapTracking;
    rplBasicLoadArgs.upid = kernel::UniqueProcessId::Kernel;
-   rplBasicLoadArgs.fileType = ios::mcp::MCPLibraryType::CafeOS;
+   rplBasicLoadArgs.fileType = ios::mcp::MCPFileType::CafeOS;
 
    error = LiLoadRPLBasics(moduleName,
                            moduleNameLen,

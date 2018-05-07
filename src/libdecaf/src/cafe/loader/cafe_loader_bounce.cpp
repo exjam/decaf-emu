@@ -13,7 +13,7 @@ struct StaticBounceData
 {
    be2_val<BOOL> dynloadInitialised;
    be2_val<uint32_t> sgFinishedLoadingBuffer; // 0xEFE19E80
-   be2_val<MCPLibraryType> sgFileType; // 0xEFE19E84
+   be2_val<MCPFileType> sgFileType; // 0xEFE19E84
    be2_val<UniqueProcessId> sgProcId; // 0xEFE19E88
    be2_val<uint32_t> sgGotBytes; // 0xEFE19E8C
    be2_val<uint32_t> sgTotalBytes; // 0xEFE19E90
@@ -33,7 +33,7 @@ LiInitBuffer(bool unk)
       sBounceData->sgFinishedLoadingBuffer = 1u;
    }
 
-   sBounceData->sgFileType = MCPLibraryType::Executable;
+   sBounceData->sgFileType = MCPFileType::ProcessCode;
    sBounceData->sgFileOffset = 0u;
    sBounceData->sgBufferNumber = 0u;
    sBounceData->sgProcId = UniqueProcessId::Invalid;
@@ -63,7 +63,7 @@ cntlzw(uint32_t s)
 
 int32_t
 LiBounceOneChunk(std::string_view name,
-                 MCPLibraryType fileType,
+                 MCPFileType fileType,
                  UniqueProcessId upid,
                  virt_ptr<uint32_t> outHunkBytes,
                  uint32_t offset,
@@ -109,7 +109,7 @@ LiBounceOneChunk(std::string_view name,
 int32_t
 LiWaitOneChunk(uint32_t *outBytesRead,
                std::string_view name,
-               MCPLibraryType fileType)
+               MCPFileType fileType)
 {
    uint32_t bytesRead;
    auto iosError = ios::Error::OK;

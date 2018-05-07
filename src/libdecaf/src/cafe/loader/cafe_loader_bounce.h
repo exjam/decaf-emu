@@ -13,7 +13,7 @@ LiInitBuffer(bool unk);
 
 int32_t
 LiBounceOneChunk(std::string_view name,
-                 ios::mcp::MCPLibraryType fileType,
+                 ios::mcp::MCPFileType fileType,
                  cafe::kernel::UniqueProcessId upid,
                  virt_ptr<uint32_t> outHunkBytes,
                  uint32_t offset,
@@ -23,6 +23,6 @@ LiBounceOneChunk(std::string_view name,
 int32_t
 LiWaitOneChunk(uint32_t *outBytesRead,
                std::string_view name,
-               ios::mcp::MCPLibraryType fileType);
+               ios::mcp::MCPFileType fileType);
 
 } // namespace cafe::loader::internal
