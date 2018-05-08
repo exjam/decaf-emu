@@ -16,7 +16,7 @@ struct Context
 
    //! Should always be set to the value OSContext::Tag.
    be2_val<uint64_t> tag;
-   be2_val<uint32_t> gpr[32];
+   be2_array<uint32_t, 32> gpr;
    be2_val<uint32_t> cr;
    be2_val<uint32_t> lr;
    be2_val<uint32_t> ctr;
@@ -32,13 +32,13 @@ struct Context
 
    UNKNOWN(0x14);
    be2_val<uint32_t> fpscr;
-   be2_val<double> fpr[32];
+   be2_array<double, 32> fpr;
    be2_val<uint16_t> spinLockCount;
    be2_val<uint16_t> state;
-   be2_val<uint32_t> gqr[8];
+   be2_array<uint32_t, 8> gqr;
    UNKNOWN(4);
-   be2_val<double> psf[32];
-   be2_val<uint64_t> coretime[3];
+   be2_array<double, 32> psf;
+   be2_array<uint64_t, 3> coretime;
    be2_val<uint64_t> starttime;
    be2_val<uint32_t> error;
    be2_val<uint32_t> attr;
