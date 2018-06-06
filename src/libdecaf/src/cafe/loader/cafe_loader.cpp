@@ -603,14 +603,17 @@ LiCheckFileBounds(virt_ptr<RPLBasics> rplBasics)
    }
 
    if (readMin == -1) {
+      readMin = dataMax;
       readMax = dataMax;
    }
 
    if (textMin == -1) {
+      textMin = readMax;
       textMax = readMax;
    }
 
    if (tempMin == -1) {
+      tempMin = textMax;
       tempMax = textMax;
    }
 
