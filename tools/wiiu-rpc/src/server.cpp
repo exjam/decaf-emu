@@ -17,7 +17,7 @@ serverStart(Server *server, int port)
    struct in_addr ip_addr;
    uint32_t ipAddress;
    ACConfigId startupId;
-   MEMHeapHandle mem2 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
+   MEMExpandedHeap *mem2 = (MEMExpandedHeap *)MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
 
    server->fd = -1;
    server->client = -1;
@@ -67,7 +67,7 @@ serverStart(Server *server, int port)
 
 int serverClose(Server *server)
 {
-   MEMHeapHandle mem2 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
+   MEMExpandedHeap *mem2 = (MEMExpandedHeap *)MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
    serverCloseClient(server);
 
    if (server->fd != -1) {

@@ -21,7 +21,7 @@ static uint32_t sBufferSizeTV, sBufferSizeDRC;
 BOOL
 consoleInit()
 {
-   MEMHeapHandle heap = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
+   MEMFrameHeap *heap = (MEMFrameHeap *)MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
    MEMRecordStateForFrmHeap(heap, FRAME_HEAP_TAG);
 
    OSScreenInit();
@@ -52,7 +52,7 @@ consoleInit()
 void
 consoleFree()
 {
-   MEMHeapHandle heap = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
+   MEMFrameHeap *heap = (MEMFrameHeap *)MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
    OSScreenShutdown();
    MEMFreeByStateToFrmHeap(heap, FRAME_HEAP_TAG);
 }

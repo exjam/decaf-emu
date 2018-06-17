@@ -1,8 +1,10 @@
 #include "packet.h"
 #include "console.h"
 
+#include <coreinit/baseheap.h>
+#include <coreinit/expandedheap.h>
+
 #include <string.h>
-#include <malloc.h>
 #include <whb/log.h>
 
 #define INITIAL_WRITE_PACKET_SIZE 1024
@@ -72,23 +74,25 @@ const char *
 pakReadString(PacketReader *packet)
 {
    uint32_t length = pakReadUint32(packet);
-   const char *str = packet->data + packet->pos;
+   const uint8_t *str = packet->data + packet->pos;
    packet->pos += length;
 
    if (packet->pos > packet->dataLength) {
       WHBLogPrintf("Read past end of packet! pos: %d length: %d", packet->pos, packet->dataLength);
    }
 
-   return str;
+   return (const char *)str;
 }
 
 void
 pakWriteAlloc(PacketWriter *packet, uint32_t command)
 {
+   MEMExpandedHeap *mem2 = (MEMExpandedHeap *)MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
+
    packet->command = command;
    packet->pos = 0;
    packet->bufferSize = INITIAL_WRITE_PACKET_SIZE;
-   packet->buffer = malloc(packet->bufferSize);
+   packet->buffer = (uint8_t *)MEMAllocFromExpHeapEx(mem2, packet->bufferSize, 16);
 
    pakWriteUint32(packet, 8);
    pakWriteUint32(packet, command);
@@ -97,13 +101,15 @@ pakWriteAlloc(PacketWriter *packet, uint32_t command)
 void
 pakWriteFree(PacketWriter *packet)
 {
-   free(packet->buffer);
+   MEMExpandedHeap *mem2 = (MEMExpandedHeap *)MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
+   MEMFreeToExpHeap(mem2, packet->buffer);
    packet->buffer = NULL;
 }
 
 static void
 pakWriteIncreaseSize(PacketWriter *packet, uint32_t size)
 {
+   MEMExpandedHeap *mem2 = (MEMExpandedHeap *)MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
    uint32_t newSize = packet->pos + size;
 
    if (newSize > packet->bufferSize) {
@@ -113,9 +119,9 @@ pakWriteIncreaseSize(PacketWriter *packet, uint32_t size)
          newBufferSize += INITIAL_WRITE_PACKET_SIZE;
       }
 
-      char *newBuffer = malloc(newBufferSize);
+      uint8_t *newBuffer = (uint8_t *)MEMAllocFromExpHeapEx(mem2, newBufferSize, 16);
       memcpy(newBuffer, packet->buffer, packet->bufferSize);
-      free(packet->buffer);
+      MEMFreeToExpHeap(mem2, packet->buffer);
       packet->buffer = newBuffer;
       packet->bufferSize = newBufferSize;
    }
@@ -127,7 +133,7 @@ pakWriteIncreaseSize(PacketWriter *packet, uint32_t size)
 void
 pakWriteUint32(PacketWriter *packet, uint32_t value)
 {
-   char *dst;
+   uint8_t *dst;
    pakWriteIncreaseSize(packet, sizeof(uint32_t));
 
    dst = packet->buffer + packet->pos;
@@ -138,7 +144,7 @@ pakWriteUint32(PacketWriter *packet, uint32_t value)
 void
 pakWriteUint64(PacketWriter *packet, uint64_t value)
 {
-   char *dst;
+   uint8_t *dst;
    pakWriteIncreaseSize(packet, sizeof(uint64_t));
 
    dst = packet->buffer + packet->pos;
@@ -172,9 +178,9 @@ pakWriteString(PacketWriter *packet, const char *str)
 }
 
 void
-pakWriteData(PacketWriter *packet, const uint8_t *data, uint32_t length)
+pakWriteData(PacketWriter *packet, const void *data, uint32_t length)
 {
-   char *dst;
+   uint8_t *dst;
    pakWriteUint32(packet, length);
 
    if (data && length > 0) {

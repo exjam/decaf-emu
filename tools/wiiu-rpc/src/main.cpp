@@ -24,7 +24,6 @@
 #include <whb/proc.h>
 
 #include <string.h>
-#include <malloc.h>
 
 typedef enum PacketCommand
 {
@@ -98,7 +97,7 @@ int
 packetHandler(Server *server, PacketReader *packet)
 {
    PacketWriter out;
-   MEMHeapHandle mem2 = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
+   MEMExpandedHeap *mem2 = (MEMExpandedHeap *)MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2);
 
    switch (packet->command) {
    case CMD_DYNLOAD_ACQUIRE:
@@ -202,14 +201,14 @@ packetHandler(Server *server, PacketReader *packet)
             argsArray[numCallArgs++] = (uint32_t)data;
          } else if (argType == ARG_TYPE_DATA_OUT) {
             argsTmpDataSize[i] = pakReadUint32(packet);
-            argsTmpData[i] = MEMAllocFromExpHeapEx(mem2, argsTmpDataSize[i], 0x100);
+            argsTmpData[i] = (uint8_t*)MEMAllocFromExpHeapEx(mem2, argsTmpDataSize[i], 0x100);
             argsArray[numCallArgs++] = (uint32_t)argsTmpData[i];
             numTmpData++;
          } else if (argType == ARG_TYPE_DATA_IN_OUT) {
             uint32_t size;
             const uint8_t *data = pakReadData(packet, &size);
             argsTmpDataSize[i] = size;
-            argsTmpData[i] = MEMAllocFromExpHeapEx(mem2, argsTmpDataSize[i], 0x100);
+            argsTmpData[i] = (uint8_t*)MEMAllocFromExpHeapEx(mem2, argsTmpDataSize[i], 0x100);
             memcpy(argsTmpData[i], data, argsTmpDataSize[i]);
             argsArray[numCallArgs++] = (uint32_t)argsTmpData[i];
             numTmpData++;
@@ -252,9 +251,9 @@ packetHandler(Server *server, PacketReader *packet)
       uint32_t request = pakReadUint32(packet);
       uint32_t vecIn = pakReadUint32(packet);
       uint32_t vecOut = pakReadUint32(packet);
-      IOSVec *vecs = MEMAllocFromExpHeapEx(mem2, sizeof(IOSVec) * (vecIn + vecOut), 0x100);
-      void **vecsPtrs = malloc(sizeof(void *) * (vecIn + vecOut));
-      uint32_t *vecsLen = malloc(sizeof(uint32_t) * (vecIn + vecOut));
+      IOSVec *vecs = (IOSVec *)MEMAllocFromExpHeapEx(mem2, sizeof(IOSVec) * (vecIn + vecOut), 0x100);
+      void **vecsPtrs = (void **)MEMAllocFromExpHeapEx(mem2, sizeof(void *) * (vecIn + vecOut), 4);
+      uint32_t *vecsLen = (uint32_t *)MEMAllocFromExpHeapEx(mem2, sizeof(uint32_t) * (vecIn + vecOut), 4);
       IOSError result;
 
       for (int i = 0; i < vecIn; ++i) {
@@ -291,8 +290,8 @@ packetHandler(Server *server, PacketReader *packet)
       }
 
       MEMFreeToExpHeap(mem2, vecs);
-      free(vecsPtrs);
-      free(vecsLen);
+      MEMFreeToExpHeap(mem2, vecsPtrs);
+      MEMFreeToExpHeap(mem2, vecsLen);
       break;
    }
    default:
@@ -309,7 +308,7 @@ main(int argc, char **argv)
    Server server;
    int result = 0;
 
-   WHBProcInit(TRUE);
+   WHBProcInit();
    WHBLogUdpInit();
    WHBInitCrashHandler();
 

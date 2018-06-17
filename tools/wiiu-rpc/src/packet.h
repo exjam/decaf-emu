@@ -15,7 +15,7 @@ typedef struct PacketWriter
 {
    uint32_t command;
    uint32_t pos;
-   void *buffer;
+   uint8_t *buffer;
    uint32_t bufferSize;
 } PacketWriter;
 
@@ -65,6 +65,6 @@ void
 pakWriteString(PacketWriter *packet, const char *str);
 
 void
-pakWriteData(PacketWriter *packet, const uint8_t *data, uint32_t length);
+pakWriteData(PacketWriter *packet, const void *data, uint32_t length);
 
 #endif // PACKET_H
