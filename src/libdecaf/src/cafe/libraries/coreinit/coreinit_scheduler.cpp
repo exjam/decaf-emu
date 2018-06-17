@@ -358,7 +358,7 @@ rescheduleNoLock(uint32_t core)
    if (core == cpu::this_core::id()) {
       rescheduleSelfNoLock();
    } else {
-      cpu::interrupt(core, cpu::GENERIC_INTERRUPT);
+      cpu::interrupt(core, cpu::ExceptionFlags::UserFirstException);
    }
 }
 

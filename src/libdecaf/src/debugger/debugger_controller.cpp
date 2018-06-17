@@ -33,7 +33,7 @@ unsigned Controller::getPauseInitiator()
 void Controller::pause()
 {
    for (auto i = 0; i < 3; ++i) {
-      cpu::interrupt(i, cpu::DBGBREAK_INTERRUPT);
+      cpu::interrupt(i, cpu::ExceptionFlags::BreakpointException);
    }
 }
 
@@ -94,7 +94,7 @@ void Controller::onDebugBreakInterrupt()
 
       // Signal the rest of the cores to stop
       for (auto i = 0; i < 3; ++i) {
-         cpu::interrupt(i, cpu::DBGBREAK_INTERRUPT);
+         cpu::interrupt(i, cpu::ExceptionFlags::BreakpointException);
       }
    }
 
@@ -111,7 +111,7 @@ void Controller::onDebugBreakInterrupt()
    }
 
    // Clear any additional debug interrupts that occured
-   cpu::this_core::clearInterrupt(cpu::DBGBREAK_INTERRUPT);
+   cpu::this_core::clearInterrupt(cpu::ExceptionFlags::BreakpointException);
 
    if ((mCoresResuming.fetch_or(coreBit) | coreBit) == AllCores) {
       // This is the final core to resume, wake up the other cores

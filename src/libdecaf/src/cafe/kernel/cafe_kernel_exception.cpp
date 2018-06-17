@@ -162,7 +162,7 @@ handleCpuInterrupt(cpu::Core *core,
    auto exceptionContext = virt_addrof(sExceptionData->exceptionThreadContext[core->id]);
    auto interruptedContext = setCurrentContext(exceptionContext);
 
-   if (flags & cpu::SRESET_INTERRUPT) {
+   if (flags & cpu::ExceptionFlags::SystemResetException) {
       callExceptionHandler(ExceptionType::SystemReset, interruptedContext, exceptionContext);
    }
 
@@ -181,11 +181,11 @@ handleCpuInterrupt(cpu::Core *core,
       // TODO: This is wired up through tcl.rpl / tve cant remember
    }
 
-   if (flags & cpu::ALARM_INTERRUPT) {
+   if (flags & cpu::ExceptionFlags::DecrementerException) {
       callExceptionHandler(ExceptionType::Decrementer, interruptedContext, exceptionContext);
    }
 
-   if (flags & cpu::DBGBREAK_INTERRUPT) {
+   if (flags & cpu::ExceptionFlags::BreakpointException) {
       callExceptionHandler(ExceptionType::Breakpoint, interruptedContext, exceptionContext);
    }
 
@@ -216,12 +216,12 @@ handleCpuInterrupt(cpu::Core *core,
 
    // TODO: This is a decaf specific interrupt telling us to wakeup the
    // current core because something is ready to run!
-   if (flags & cpu::GENERIC_INTERRUPT) {
+   if (flags & cpu::ExceptionFlags::UserFirstException) {
    }
 
 
    /*
-   if (interrupt_flags & cpu::DBGBREAK_INTERRUPT) {
+   if (interrupt_flags & cpu::ExceptionFlags::BreakpointException) {
       if (decaf::config::debugger::enabled) {
          coreinit::internal::pauseCoreTime(true);
          debugger::handleDebugBreakInterrupt();
@@ -229,7 +229,7 @@ handleCpuInterrupt(cpu::Core *core,
       }
    }
 
-   auto unsafeInterrupts = cpu::NONMASKABLE_INTERRUPTS | cpu::DBGBREAK_INTERRUPT;
+   auto unsafeInterrupts = cpu::NONMASKABLE_INTERRUPTS | cpu::ExceptionFlags::BreakpointException;
    if (!(interrupt_flags & ~unsafeInterrupts)) {
       // Due to the fact that non-maskable interrupts are not able to be disabled
       // it is possible the application has the scheduler lock or something, so we
@@ -255,7 +255,7 @@ handleCpuInterrupt(cpu::Core *core,
 
    auto interruptedThread = coreinit::internal::getCurrentThread();
 
-   if (interrupt_flags & cpu::ALARM_INTERRUPT) {
+   if (interrupt_flags & cpu::ExceptionFlags::DecrementerException) {
       coreinit::internal::handleAlarmInterrupt(&interruptedThread->context);
    }
 

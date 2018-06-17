@@ -255,11 +255,11 @@ initCoreInterruptContext()
 void
 cpuInterruptHandler(uint32_t interrupt_flags)
 {
-   if (interrupt_flags & cpu::SRESET_INTERRUPT) {
+   if (interrupt_flags & cpu::ExceptionFlags::SystemResetException) {
       platform::exitThread(0);
    }
 
-   if (interrupt_flags & cpu::DBGBREAK_INTERRUPT) {
+   if (interrupt_flags & cpu::ExceptionFlags::BreakpointException) {
       if (decaf::config::debugger::enabled) {
          coreinit::internal::pauseCoreTime(true);
          debugger::handleDebugBreakInterrupt();
@@ -267,7 +267,7 @@ cpuInterruptHandler(uint32_t interrupt_flags)
       }
    }
 
-   auto unsafeInterrupts = cpu::NONMASKABLE_INTERRUPTS | cpu::DBGBREAK_INTERRUPT;
+   auto unsafeInterrupts = cpu::NONMASKABLE_INTERRUPTS | cpu::ExceptionFlags::BreakpointException;
    if (!(interrupt_flags & ~unsafeInterrupts)) {
       // Due to the fact that non-maskable interrupts are not able to be disabled
       // it is possible the application has the scheduler lock or something, so we
@@ -293,7 +293,7 @@ cpuInterruptHandler(uint32_t interrupt_flags)
 
    auto interruptedThread = coreinit::internal::getCurrentThread();
 
-   if (interrupt_flags & cpu::ALARM_INTERRUPT) {
+   if (interrupt_flags & cpu::ExceptionFlags::DecrementerException) {
       coreinit::internal::handleAlarmInterrupt(&interruptedThread->context);
    }
 
@@ -342,7 +342,7 @@ cpuEntrypoint()
       launchGame();
 
       // Trip an interrupt on core 1 to force it to schedule the loader.
-      cpu::interrupt(1, cpu::GENERIC_INTERRUPT);
+      cpu::interrupt(1, cpu::ExceptionFlags::UserFirstException);
    }
 
    // Set up the default expected state for the nia/cia of idle threads.

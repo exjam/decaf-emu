@@ -64,7 +64,7 @@ struct Core : CoreRegs
    // State data used by the CPU executors
    uint32_t id;
    std::thread thread;
-   uint32_t interrupt_mask { 0xFFFFFFFF };
+   ExceptionFlags interrupt_mask { 0xFFFFFFFF };
    std::atomic<uint32_t> interrupt { 0 };
    bool reserveFlag { false };
    uint32_t reserveData;

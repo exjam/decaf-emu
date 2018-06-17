@@ -34,7 +34,7 @@ setInterruptHandler(InterruptHandler handler)
 }
 
 void
-interrupt(int core_idx, uint32_t flags)
+interrupt(int core_idx, ExceptionFlags flags)
 {
    std::unique_lock<std::mutex> lock { gInterruptMutex };
    gCore[core_idx]->interrupt.fetch_or(flags);
@@ -55,7 +55,7 @@ timerEntryPoint()
 
          if (core->next_alarm <= now) {
             core->next_alarm = std::chrono::steady_clock::time_point::max();
-            cpu::interrupt(i, ALARM_INTERRUPT);
+            cpu::interrupt(i, cpu::ExceptionFlags::DecrementerException);
          } else if (core->next_alarm < next) {
             next = core->next_alarm;
             timedWait = true;
@@ -74,19 +74,19 @@ namespace this_core
 {
 
 void
-clearInterrupt(uint32_t flags)
+clearInterrupt(ExceptionFlags flags)
 {
    state()->interrupt.fetch_and(~flags);
 }
 
-uint32_t
+ExceptionFlags
 interruptMask()
 {
    return state()->interrupt_mask;
 }
 
-uint32_t
-setInterruptMask(uint32_t mask)
+ExceptionFlags
+setInterruptMask(ExceptionFlags mask)
 {
    auto core = state();
    auto old_mask = core->interrupt_mask;
@@ -102,7 +102,7 @@ checkInterrupts()
    auto flags = core->interrupt.fetch_and(~mask);
 
    if (flags & mask) {
-      cpu::gInterruptHandler(core, flags);
+      cpu::gInterruptHandler(core, static_cast<ExceptionFlags>(flags));
    }
 }
 
@@ -122,7 +122,7 @@ waitForInterrupt()
 
       if (flags & mask) {
          lock.unlock();
-         gInterruptHandler(core, flags);
+         gInterruptHandler(core, static_cast<ExceptionFlags>(flags));
          lock.lock();
       } else {
          gInterruptCondition.wait(lock);
@@ -153,7 +153,7 @@ waitNextInterrupt(std::chrono::steady_clock::time_point until)
    lock.unlock();
 
    if (flags & mask) {
-      gInterruptHandler(core, flags);
+      gInterruptHandler(core, static_cast<ExceptionFlags>(flags));
    }
 }
 

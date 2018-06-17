@@ -63,7 +63,7 @@ step_one(Core *core)
 {
    // Check if we hit any breakpoints
    if (testBreakpoint(core->nia)) {
-      core->interrupt.fetch_or(DBGBREAK_INTERRUPT);
+      core->interrupt.fetch_or(ExceptionFlags::BreakpointException);
       this_core::checkInterrupts();
    }
 

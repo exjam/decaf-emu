@@ -25,10 +25,10 @@ OSEnableInterrupts()
 BOOL
 OSDisableInterrupts()
 {
-   // We allow DBGBREAK_INTERRUPT here so that the debugger can still trace through
+   // We allow BreakpointException here so that the debugger can still trace through
    // OSDisableInterrupts calls.  This is not an issue only because internally we
    // only care about the scheduler lock which is only used internally.
-   return cpu::this_core::setInterruptMask(cpu::DBGBREAK_INTERRUPT) == cpu::INTERRUPT_MASK;
+   return cpu::this_core::setInterruptMask(cpu::ExceptionFlags::BreakpointException) == cpu::INTERRUPT_MASK;
 }
 
 

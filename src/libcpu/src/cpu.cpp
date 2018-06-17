@@ -227,7 +227,7 @@ void
 halt()
 {
    for (auto i = 0; i < 3; ++i) {
-      interrupt(i, SRESET_INTERRUPT);
+      interrupt(i, ExceptionFlags::SystemResetException);
    }
 }
 
