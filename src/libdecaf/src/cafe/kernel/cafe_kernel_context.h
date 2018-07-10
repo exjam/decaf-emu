@@ -40,7 +40,7 @@ struct Context
    be2_array<double, 32> psf;
    be2_array<uint64_t, 3> coretime;
    be2_val<uint64_t> starttime;
-   be2_val<uint32_t> error;
+   be2_val<int32_t> error;
    be2_val<uint32_t> attr;
    be2_val<uint32_t> pmc1;
    be2_val<uint32_t> pmc2;

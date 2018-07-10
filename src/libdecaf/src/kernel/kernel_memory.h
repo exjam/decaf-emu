@@ -33,6 +33,7 @@ enum class PhysicalRegion
    MEM2SharedData,
    MEM2LoaderBounceBuffer,
    MEM2CafeKernelWorkAreaHeap,
+   MEM2LoaderGlobals,
    MEM2LoaderHeap,
    MEM2IosSharedHeap,
    MEM2IosNetIobuf,
@@ -63,6 +64,7 @@ enum class VirtualRegion
    TilingApertures,
    VirtualMapRange,
    ForegroundBucket,
+   LoaderGlobals,
    MEM1,
    LoaderBounceBuffer,
    SharedData,
@@ -105,5 +107,27 @@ getAvailPhysicalRange();
 
 cpu::PhysicalAddressRange
 getDataPhysicalRange();
+
+cpu::VirtualAddress
+allocVirtAddr(cpu::VirtualAddress address,
+              uint32_t size,
+              uint32_t alignment);
+
+bool
+freeVirtAddr(cpu::VirtualAddress address,
+             uint32_t size);
+
+bool
+mapMemory(cpu::VirtualAddress virtAddr,
+          cpu::PhysicalAddress physAddr,
+          uint32_t size,
+          MapPermission permission);
+
+bool
+unmapMemory(cpu::VirtualAddress virtAddr,
+            uint32_t size);
+
+VirtualMemoryType
+queryVirtAddr(cpu::VirtualAddress address);
 
 } // namespace kernel

@@ -1,15 +1,15 @@
 #include "cafe_kernel_context.h"
 #include "cafe_kernel_exception.h"
 #include "cafe_kernel_heap.h"
+#include "cafe_kernel_ipckdriver.h"
 #include "cafe/cafe_ppc_interface_invoke.h"
 
 #include "decaf_config.h"
 #include "debugger/debugger.h"
-#include "kernel/kernel_ipc.h"
-#include "modules/coreinit/coreinit_alarm.h"
-#include "modules/coreinit/coreinit_interrupts.h"
-#include "modules/coreinit/coreinit_scheduler.h"
-#include "modules/gx2/gx2_event.h"
+#include "cafe/libraries/coreinit/coreinit_alarm.h"
+#include "cafe/libraries/coreinit/coreinit_interrupts.h"
+#include "cafe/libraries/coreinit/coreinit_scheduler.h"
+#include "cafe/libraries/gx2/gx2_event.h"
 
 #include <array>
 #include <common/log.h>
@@ -76,7 +76,7 @@ handleCpuInterrupt(cpu::Core *core,
    coreinit::internal::disableScheduler();
 
    if (flags & cpu::ALARM_INTERRUPT) {
-      coreinit::internal::handleAlarmInterrupt(reinterpret_cast<coreinit::OSContext *>(interruptedContext.getRawPointer()));
+      coreinit::internal::handleAlarmInterrupt(interruptedContext);
    }
 
    if (flags & cpu::GPU_RETIRE_INTERRUPT) {
@@ -88,7 +88,7 @@ handleCpuInterrupt(cpu::Core *core,
    }
 
    if (flags & cpu::IPC_INTERRUPT) {
-      ::kernel::ipcDriverKernelHandleInterrupt();
+      ipcDriverKernelHandleInterrupt();
    }
 
    coreinit::internal::enableScheduler();

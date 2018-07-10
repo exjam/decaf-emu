@@ -1,35 +1,24 @@
 #include "debugger/debugger.h"
 #include "decaf_events.h"
+#include "decaf_config.h"
 #include "filesystem/filesystem.h"
 #include "kernel.h"
 #include "kernel_hle.h"
-#include "kernel_ipc.h"
 #include "kernel_loader.h"
 #include "kernel_memory.h"
 #include "kernel_filesystem.h"
 #include "ios/ios.h"
-#include "modules/coreinit/coreinit.h"
-#include "modules/coreinit/coreinit_alarm.h"
-#include "modules/coreinit/coreinit_appio.h"
-#include "modules/coreinit/coreinit_core.h"
-#include "modules/coreinit/coreinit_enum.h"
-#include "modules/coreinit/coreinit_ipc.h"
-#include "modules/coreinit/coreinit_mcp.h"
-#include "modules/coreinit/coreinit_memheap.h"
-#include "modules/coreinit/coreinit_scheduler.h"
-#include "modules/coreinit/coreinit_shared.h"
-#include "modules/coreinit/coreinit_systeminfo.h"
-#include "modules/coreinit/coreinit_thread.h"
-#include "modules/coreinit/coreinit_interrupts.h"
-#include "modules/gx2/gx2_event.h"
+#include "cafe/libraries/gx2/gx2_event.h"
 #include "modules/sci/sci_cafe_settings.h"
 #include "modules/sci/sci_caffeine_settings.h"
 #include "modules/sci/sci_parental_account_settings_uc.h"
 #include "modules/sci/sci_parental_settings.h"
 #include "modules/sci/sci_spot_pass_settings.h"
-#include "ppcutils/wfunc_call.h"
-#include "ppcutils/stackobject.h"
 
+#include "cafe/libraries/cafe_hle.h"
+#include "cafe/cafe_ppc_interface_invoke.h"
+#include "cafe/loader/cafe_loader_globals.h"
+#include "cafe/kernel/cafe_kernel_loader.h"
 #include "cafe/kernel/cafe_kernel_exception.h"
 #include "cafe/kernel/cafe_kernel_heap.h"
 
@@ -39,6 +28,7 @@
 #include <common/platform_thread.h>
 #include <common/teenyheap.h>
 #include <fmt/format.h>
+#include <libcpu/trace.h>
 #include <libcpu/mem.h>
 #include <pugixml.hpp>
 
@@ -107,6 +97,8 @@ setExecutableFilename(const std::string& name)
 void
 initialise()
 {
+   cafe::hle::initialiseLibraries();
+
    // Initialise memory
    initialiseVirtualMemory();
    cafe::kernel::internal::initialiseStaticDataHeap();
@@ -116,7 +108,7 @@ initialise()
    cafe::kernel::internal::initialiseStaticExceptionData();
 
    // Initialise HLE modules
-   initialiseHleModules();
+   // initialiseHleModules();
 
    // Setup cpu
    cpu::setCoreEntrypointHandler(&cpuEntrypoint);
@@ -145,12 +137,12 @@ getSystemHeap()
 static void
 cpuBranchTraceHandler(cpu::Core *core, uint32_t target)
 {
-   auto symNamePtr = loader::findSymbolNameForAddress(target);
+   /*auto symNamePtr = loader::findSymbolNameForAddress(target);
    if (!symNamePtr) {
       return;
    }
 
-   gLog->debug("CPU branched to: {}", *symNamePtr);
+   gLog->debug("CPU branched to: {}", *symNamePtr);*/
 }
 
 static void
@@ -198,9 +190,34 @@ core1EntryPoint(cpu::Core *core)
                        sGameInfo.cos.codegen_size,
                        sGameInfo.cos.avail_size);
 
+   if (sGameInfo.cos.num_codearea_heap_blocks == 0) {
+      sGameInfo.cos.num_codearea_heap_blocks = 256;
+   }
+
+   if (sGameInfo.cos.num_workarea_heap_blocks == 0) {
+      sGameInfo.cos.num_workarea_heap_blocks = 512;
+   }
+
+   cafe::loader::setLoadRpxName(rpx);
+   cafe::kernel::internal::KiRPLStartup(
+      cafe::kernel::UniqueProcessId::Kernel,
+      cafe::kernel::UniqueProcessId::Game,
+      cafe::kernel::ProcessFlags::get(0).debugLevel(cafe::kernel::DebugLevel::Verbose),
+      sGameInfo.cos.num_codearea_heap_blocks,
+      sGameInfo.cos.max_codesize,
+      getVirtualRange(VirtualRegion::MainAppData).size + 1,
+      0);
+
+   // Run coreinit entry point
+   using EntryPointFn = virt_func_ptr<void(void)>;
+   auto coreinitEntry = virt_func_cast<EntryPointFn>(cafe::loader::getKernelIpcStorage()->startInfo.coreinit->entryPoint);
+
+   cafe::invoke(cpu::this_core::state(),
+                coreinitEntry);
+
+#if 0
    // Load the default shared libraries, but NOT run their entry points
    auto coreinitModule = loader::loadRPL("coreinit");
-#if 0
    for (auto &name : sSharedLibraries) {
       auto sharedModule = loader::loadRPL(name);
 
@@ -208,7 +225,6 @@ core1EntryPoint(cpu::Core *core)
          gLog->warn("Could not load shared library {}", name);
       }
    }
-#endif
 
    // Load the application
    auto appModule = loader::loadRPL(rpx);
@@ -247,7 +263,7 @@ core1EntryPoint(cpu::Core *core)
    auto thread = coreinit::OSGetDefaultThread(1);
    thread->entryPoint = gameThreadEntry;
    coreinit::OSResumeThread(thread);
-
+#endif
    // Trip an interrupt to force game thread to run
    cpu::interrupt(1, cpu::GENERIC_INTERRUPT);
    coreWfiLoop(core);
@@ -290,20 +306,12 @@ cpuEntrypoint(cpu::Core *core)
 loader::LoadedModule *
 getUserModule()
 {
-   return sUserModule;
+   return nullptr;
 }
 
 loader::LoadedModule *
 getTLSModule(uint32_t index)
 {
-   auto modules = loader::getLoadedModules();
-
-   for (auto &module : modules) {
-      if (module.second->tlsModuleIndex == index) {
-         return module.second;
-      }
-   }
-
    return nullptr;
 }
 

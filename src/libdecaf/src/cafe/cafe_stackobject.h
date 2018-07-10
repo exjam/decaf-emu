@@ -5,6 +5,7 @@
 #include <libcpu/cpu.h>
 #include <libcpu/be2_struct.h>
 #include <memory>
+#include <string_view>
 
 namespace cafe
 {
@@ -77,8 +78,20 @@ template<std::size_t N>
 inline auto
 make_stack_string(const char (&hostStr)[N])
 {
-   StackArray<const char, N + 1> guestStr;
-   std::strcpy(guestStr.getRawPointer(), hostStr);
+   StackArray<char, N + 1> guestStr;
+   std::memcpy(guestStr.getRawPointer(), hostStr, N);
+   guestStr[N] = char { 0 };
+   return guestStr;
+}
+
+template<std::size_t N>
+inline auto
+make_stack_string(std::string_view str)
+{
+   StackArray<char, N> guestStr;
+   auto length = str.size() >= N ? N - 1 : str.size();
+   std::memcpy(guestStr.getRawPointer(), str.data(), length);
+   guestStr[length] = char { 0 };
    return guestStr;
 }
 

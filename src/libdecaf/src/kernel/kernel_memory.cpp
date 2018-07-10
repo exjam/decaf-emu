@@ -1,3 +1,4 @@
+#pragma optimize("", off)
 #include "kernel_enum.h"
 #include "kernel_memory.h"
 
@@ -89,7 +90,9 @@ sPhysicalMemoryMap {
    { PhysicalRegion::MEM2SharedData,               { 0x18000000_paddr, 0x1AFFFFFF_paddr } },
    { PhysicalRegion::MEM2LoaderBounceBuffer,       { 0x1B000000_paddr, 0x1B7FFFFF_paddr } },
    { PhysicalRegion::MEM2CafeKernelWorkAreaHeap,   { 0x1B800000_paddr, 0x1B87FFFF_paddr } },
-   // Unknown                                        0x1B880000   --   0x1BFFFFFF
+   // Unknown                                        0x1B880000   --   0x1B8FFFFF
+   { PhysicalRegion::MEM2LoaderGlobals,            { 0x1B900000_paddr, 0x1B97FFFF_paddr } },
+   // Unknown                                        0x1B980000   --   0x1BFFFFFF
    { PhysicalRegion::MEM2LoaderHeap,               { 0x1C000000_paddr, 0x1CFFFFFF_paddr } },
    { PhysicalRegion::MEM2IosSharedHeap,            { 0x1D000000_paddr, 0x1FAFFFFF_paddr } },
    { PhysicalRegion::MEM2IosNetIobuf,              { 0x1FB00000_paddr, 0x1FDFFFFF_paddr } },
@@ -128,6 +131,7 @@ sVirtualMemoryMap {
    { VirtualRegion::TilingApertures,         { 0x80000000_vaddr, 0x8FFFFFFF_vaddr, PhysicalRegion::TilingApertures } },
    { VirtualRegion::VirtualMapRange,         { 0xA0000000_vaddr, 0xDFFFFFFF_vaddr, PhysicalRegion::Invalid } },
    { VirtualRegion::ForegroundBucket,        { 0xE0000000_vaddr, 0xE3FFFFFF_vaddr, PhysicalRegion::MEM2ForegroundBucket } },
+   { VirtualRegion::LoaderGlobals,           { 0xEFE00000_vaddr, 0xEFE7FFFF_vaddr, PhysicalRegion::MEM2LoaderGlobals } },
    { VirtualRegion::MEM1,                    { 0xF4000000_vaddr, 0xF5FFFFFF_vaddr, PhysicalRegion::MEM1 } },
    { VirtualRegion::LoaderBounceBuffer,      { 0xF6000000_vaddr, 0xF67FFFFF_vaddr, PhysicalRegion::MEM2LoaderBounceBuffer } },
    { VirtualRegion::SharedData,              { 0xF8000000_vaddr, 0xFAFFFFFF_vaddr, PhysicalRegion::MEM2SharedData } },
@@ -146,7 +150,7 @@ MemoryMap <0x10000000,          0,          0, 0x28305800> // app data
 MemoryMap <0xA0000000, 0x40000000,          0,     0x2000> // unk (wiiubru thinks mapping used by loader to load app code/data)
 MemoryMap <0xE0000000,  0x4000000, 0x14000000, 0x28204004> // foreground bucket
 MemoryMap <0xE8000000,  0x2000000, 0xD0000000, 0x78200004> // unk 32mb
-MemoryMap <0xEFE00000,    0x80000, 0x1B900000, 0x28109010> // kernel <-> loader IPC data
+MemoryMap <0xEFE00000,    0x80000, 0x1B900000, 0x28109010> // loader globals, also read / write by kernel
 MemoryMap <0xF4000000,  0x2000000,          0, 0x28204004> // MEM1
 MemoryMap <0xF6000000,   0x800000, 0x1B000000, 0x3CA08002> // loader bounce buffer, 8mb
 MemoryMap <0xF8000000,  0x3000000, 0x18000000, 0x2CA08002> // shared data
@@ -156,7 +160,10 @@ MemoryMap <0xFC0C0000,   0x120000,  0xC0C0000, 0x70100022> // registers
 MemoryMap <0xFC1E0000,    0x20000,  0xC1E0000, 0x78100024> // registers
 MemoryMap <0xFC200000,    0x80000,  0xC200000, 0x78100024> // registers
 MemoryMap <0xFC280000,    0x20000,  0xC280000, 0x78100024> // registers
-MemoryMap <0xFC2A0000,    0x20000,  0xC2A0000, 0x78100023> // registers
+MemoryMap <0xFC2A0000,    0x20000,  0xC2A0000, 0x78100023> // write gather memory
+                                    0xC2A0000 = write gather core 0
+                                    0xC2C0000 = write gather core 0
+                                    0xC2E0000 = write gather core 2
 MemoryMap <0xFC300000,    0x20000,  0xC300000, 0x78100024> // registers
 MemoryMap <0xFC320000,    0xE0000,  0xC320000, 0x70100022> // registers
 MemoryMap <0xFD000000,   0x400000,  0xD000000, 0x70100022> // registers
@@ -249,6 +256,7 @@ initialiseVirtualMemory()
    map(sVirtualMemoryMap[VirtualRegion::ForegroundBucket]);
    map(sVirtualMemoryMap[VirtualRegion::MEM1]);
    map(sVirtualMemoryMap[VirtualRegion::LoaderBounceBuffer]);
+   map(sVirtualMemoryMap[VirtualRegion::LoaderGlobals]);
    map(sVirtualMemoryMap[VirtualRegion::SharedData]);
    map(sVirtualMemoryMap[VirtualRegion::LockedCache]);
    map(sVirtualMemoryMap[VirtualRegion::KernelWorkAreaHeap]);
@@ -262,6 +270,7 @@ freeVirtualMemory()
    unmap(sVirtualMemoryMap[VirtualRegion::ForegroundBucket]);
    unmap(sVirtualMemoryMap[VirtualRegion::MEM1]);
    unmap(sVirtualMemoryMap[VirtualRegion::LoaderBounceBuffer]);
+   unmap(sVirtualMemoryMap[VirtualRegion::LoaderGlobals]);
    unmap(sVirtualMemoryMap[VirtualRegion::SharedData]);
    unmap(sVirtualMemoryMap[VirtualRegion::LockedCache]);
    unmap(sVirtualMemoryMap[VirtualRegion::KernelWorkAreaHeap]);
@@ -413,8 +422,117 @@ getAvailPhysicalRange()
 cpu::PhysicalAddressRange
 getDataPhysicalRange()
 {
-   return { sPhysicalMemoryMap[PhysicalRegion::MEM2MainApp].start,
-            sVirtualMemoryMap[VirtualRegion::MainAppData].size() };
+   return {
+      sPhysicalMemoryMap[PhysicalRegion::MEM2MainApp].start,
+      sVirtualMemoryMap[VirtualRegion::MainAppData].size()
+   };
+}
+
+static bool
+inVirtualMapRange(cpu::VirtualAddress address,
+                  uint32_t size)
+{
+   auto range = kernel::getVirtualRange(kernel::VirtualRegion::VirtualMapRange);
+   return (range.start <= address && address + size <= range.start + range.size);
+}
+
+cpu::VirtualAddress
+allocVirtAddr(cpu::VirtualAddress address,
+              uint32_t size,
+              uint32_t alignment)
+{
+   if (alignment < cpu::PageSize) {
+      alignment = cpu::PageSize;
+   }
+
+   if (address) {
+      if (!inVirtualMapRange(address, size)) {
+         return cpu::VirtualAddress { 0u };
+      }
+
+      address = align_up(address, alignment);
+      size = align_up(size, alignment);
+   } else {
+      auto virtualMapRange = kernel::getVirtualRange(kernel::VirtualRegion::VirtualMapRange);
+      auto range = cpu::findFreeVirtualAddressInRange(virtualMapRange, size, alignment);
+      address = range.start;
+      size = range.size;
+   }
+
+   if (cpu::allocateVirtualAddress(address, size)) {
+      return address;
+   } else {
+      return cpu::VirtualAddress { 0u };
+   }
+}
+
+bool
+freeVirtAddr(cpu::VirtualAddress address,
+             uint32_t size)
+{
+   if (!inVirtualMapRange(address, size)) {
+      return false;
+   }
+
+   return cpu::freeVirtualAddress(address, size);
+}
+
+bool
+mapMemory(cpu::VirtualAddress virtAddr,
+          cpu::PhysicalAddress physAddr,
+          uint32_t size,
+          MapPermission permission)
+{
+   if (!inVirtualMapRange(virtAddr, size)) {
+      return false;
+   }
+
+   auto cpuPermission = cpu::MapPermission { };
+
+   if (permission == MapPermission::ReadOnly) {
+      cpuPermission = cpu::MapPermission::ReadOnly;
+   } else if (permission == MapPermission::ReadWrite) {
+      cpuPermission = cpu::MapPermission::ReadWrite;
+   } else {
+      gLog->error("Unexpected mapMemory permission: {}", permission);
+      return false;
+   }
+
+   return cpu::mapMemory(virtAddr, physAddr, size, cpuPermission);
+}
+
+bool
+unmapMemory(cpu::VirtualAddress virtAddr,
+            uint32_t size)
+{
+   if (!inVirtualMapRange(virtAddr, size)) {
+      return false;
+   }
+
+   return cpu::unmapMemory(virtAddr, size);
+}
+
+VirtualMemoryType
+queryVirtAddr(cpu::VirtualAddress address)
+{
+   if (!inVirtualMapRange(address, 0)) {
+      return VirtualMemoryType::Invalid;
+   }
+
+   auto cpuType = cpu::queryVirtualAddress(address);
+
+   switch (cpuType) {
+   case cpu::VirtualMemoryType::MappedReadOnly:
+      return VirtualMemoryType::MappedReadOnly;
+   case cpu::VirtualMemoryType::MappedReadWrite:
+      return VirtualMemoryType::MappedReadWrite;
+   case cpu::VirtualMemoryType::Free:
+      return VirtualMemoryType::Free;
+   case cpu::VirtualMemoryType::Allocated:
+      return VirtualMemoryType::Allocated;
+   default:
+      return VirtualMemoryType::Invalid;
+   }
 }
 
 } // namespace kernel

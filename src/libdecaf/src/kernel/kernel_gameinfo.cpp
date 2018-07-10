@@ -137,6 +137,18 @@ loadCosXML(const char *path,
    cos.exception_stack1_size = xmlReadUnsigned(node.child("exception_stack1_size"));
    cos.exception_stack2_size = xmlReadUnsigned(node.child("exception_stack2_size"));
 
+   if (!node.child("num_codearea_heap_blocks")) {
+      cos.num_codearea_heap_blocks = 0;
+   } else {
+      cos.num_codearea_heap_blocks = xmlReadUnsigned(node.child("num_codearea_heap_blocks"));
+   }
+
+   if (!node.child("num_workarea_heap_blocks")) {
+      cos.num_workarea_heap_blocks = 0;
+   } else {
+      cos.num_workarea_heap_blocks = xmlReadUnsigned(node.child("num_workarea_heap_blocks"));
+   }
+
    for (auto child : node.child("permissions").children()) {
       auto group = xmlReadUnsigned(child.child("group"));
       auto mask = xmlReadUnsigned64(child.child("mask"));

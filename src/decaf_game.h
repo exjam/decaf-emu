@@ -104,6 +104,8 @@ struct CosXML
    unsigned exception_stack2_size;
    uint64_t permission_fs;
    uint64_t permission_mcp;
+   unsigned num_codearea_heap_blocks;
+   unsigned num_workarea_heap_blocks;
 };
 
 struct GameInfo

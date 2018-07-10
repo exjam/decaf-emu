@@ -13,9 +13,9 @@
 #include "kernel/kernel_hlefunction.h"
 #include "libcpu/cpu.h"
 #include "libcpu/mem.h"
-#include "modules/coreinit/coreinit_fs.h"
-#include "modules/coreinit/coreinit_scheduler.h"
-#include "modules/swkbd/swkbd_core.h"
+#include "cafe/libraries/coreinit/coreinit_scheduler.h"
+#include "cafe/libraries/coreinit/coreinit_thread.h"
+#include "cafe/libraries/swkbd/swkbd_keyboard.h"
 
 #include <common/platform.h>
 #include <common/platform_dir.h>
@@ -55,9 +55,9 @@ public:
 
       auto core = cpu::this_core::state();
       if (core) {
-         auto thread = coreinit::internal::getCurrentThread();
+         auto thread = cafe::coreinit::internal::getCurrentThread();
          if (thread) {
-            msg.formatted.write("w{:01X}{:02X}", core->id, static_cast<uint16_t>(thread->id));
+            msg.formatted.write("w{:01X}{:02X}", core->id, thread->id);
          } else {
             msg.formatted.write("w{:01X}{:02X}", core->id, 0xFF);
          }
@@ -305,7 +305,7 @@ injectKeyInput(input::KeyboardKey key,
                input::KeyboardAction action)
 {
    if (!debugger::ui::onKeyAction(key, action)) {
-      nn::swkbd::internal::injectKeyInput(key, action);
+      cafe::swkbd::internal::injectKeyInput(key, action);
    }
 }
 
@@ -313,7 +313,7 @@ void
 injectTextInput(const char *text)
 {
    if (!debugger::ui::onText(text)) {
-      nn::swkbd::internal::injectTextInput(text);
+      cafe::swkbd::internal::injectTextInput(text);
    }
 }
 
