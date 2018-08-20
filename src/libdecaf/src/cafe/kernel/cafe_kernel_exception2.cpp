@@ -43,14 +43,12 @@ static void
 handleUnhandledProgramException(ExceptionType type,
                                 virt_ptr<Context> interruptedContext)
 {
-
 }
 
 static void
 handleSystemResetException(ExceptionType type,
                                 virt_ptr<Context> interruptedContext)
 {
-
 }
 
 static void

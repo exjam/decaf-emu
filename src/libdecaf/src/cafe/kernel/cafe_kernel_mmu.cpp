@@ -34,7 +34,7 @@ constexpr cpu::VirtualAddress operator "" _vaddr(unsigned long long int x)
 static std::map<PhysicalRegion, phys_addr_range>
 sPhysicalMemoryMap {
    // MEM1 - 32 MB
-   { PhysicalRegion::MEM1,                   phys_addr_range { 0x00000000_paddr , 0x01FFFFFF_paddr } },
+   { PhysicalRegion::MEM1,                   { 0x00000000_paddr , 0x01FFFFFF_paddr } },
 
    // LockedCache (not present on hardware) - 16 KB per core
    // Note we have to use the page size, 128kb, as that is the minimum we can map.
