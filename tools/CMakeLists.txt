@@ -6,6 +6,10 @@ include_directories("../src")
 add_subdirectory(gfd-tool)
 add_subdirectory(latte-assembler)
 
+if(DECAF_VULKAN)
+   add_subdirectory(gsh-to-spirv)
+endif()
+
 if(DECAF_GL)
    if(DECAF_SDL)
        add_subdirectory(pm4-replay)
