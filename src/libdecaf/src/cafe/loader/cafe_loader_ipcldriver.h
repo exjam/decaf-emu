@@ -1,7 +1,9 @@
 #pragma once
+#include "cafe_loader_ipcldriverfifo.h"
+
+#include "cafe/kernel/cafe_kernel_ipckdriver.h"
 #include "ios/ios_enum.h"
 #include "ios/ios_ipc.h"
-#include "cafe/kernel/cafe_kernel_ipckdriver.h"
 
 #include <cstdint>
 #include <common/cbool.h>
@@ -48,35 +50,6 @@ CHECK_OFFSET(IPCLDriverRequest, 0x08, asyncCallbackData);
 #endif
 CHECK_OFFSET(IPCLDriverRequest, 0x10, ipckRequestBuffer);
 CHECK_SIZE(IPCLDriverRequest, 0x14);
-
-/**
- * FIFO queue for IPCLDriverRequests.
- *
- * Functions similar to a ring buffer.
- */
-struct IPCLDriverFIFO
-{
-   //! The current item index to push to
-   be2_val<int32_t> pushIndex;
-
-   //! The current item index to pop from
-   be2_val<int32_t> popIndex;
-
-   //! The number of items in the queue
-   be2_val<int32_t> count;
-
-   //! Tracks the highest amount of items there has been in the queue
-   be2_val<int32_t> maxCount;
-
-   //! Items in the queue
-   be2_array<virt_ptr<IPCLDriverRequest>, IPCLBufferCount> requests;
-};
-CHECK_OFFSET(IPCLDriverFIFO, 0x00, pushIndex);
-CHECK_OFFSET(IPCLDriverFIFO, 0x04, popIndex);
-CHECK_OFFSET(IPCLDriverFIFO, 0x08, count);
-CHECK_OFFSET(IPCLDriverFIFO, 0x0C, maxCount);
-CHECK_OFFSET(IPCLDriverFIFO, 0x10, requests);
-CHECK_SIZE(IPCLDriverFIFO, 0x20);
 
 struct IPCLDriver
 {
@@ -142,8 +115,8 @@ struct IPCLDriver
    be2_val<uint32_t> failedAllocateRequestBlock;
    be2_val<uint32_t> failedFreeRequestBlock;
    be2_val<uint32_t> failedRequestSubmitOutboundFIFOFull;
-   be2_struct<IPCLDriverFIFO> freeFifo;
-   be2_struct<IPCLDriverFIFO> outboundFifo;
+   be2_struct<IPCLDriverFIFO<IPCLBufferCount>> freeFifo;
+   be2_struct<IPCLDriverFIFO<IPCLBufferCount>> outboundFifo;
    be2_array<IPCLDriverRequest, IPCLBufferCount> requests;
 };
 CHECK_OFFSET(IPCLDriver, 0x00, status);
@@ -235,5 +208,8 @@ IPCLDriver_IoctlAsync(ios::Handle handle,
                       uint32_t outputLength,
                       IPCLAsyncCallbackFn callback,
                       virt_ptr<void> callbackContext);
+
+void
+initialiseIpclDriverStaticData();
 
 } // namespace cafe::loader::internal

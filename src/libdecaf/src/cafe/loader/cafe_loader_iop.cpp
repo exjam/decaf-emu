@@ -1,16 +1,16 @@
+#include "cafe_loader_heap.h"
 #include "cafe_loader_iop.h"
 #include "cafe_loader_ipcldriver.h"
-//#include "cafe_loader_process.h"
 
+#include "cafe/cafe_tinyheap.h"
 #include "cafe/kernel/cafe_kernel_ipckdriver.h"
-//#include "cafe/kernel/cafe_kernel_mcp.h"
+#include "cafe/kernel/cafe_kernel_ipc.h"
 #include "cafe/kernel/cafe_kernel_process.h"
 #include "ios/mcp/ios_mcp_mcp.h"
 
 #include <array>
 #include <cstdint>
 #include <common/cbool.h>
-#include <common/teenyheap.h>
 #include <libcpu/be2_struct.h>
 #include <libcpu/cpu.h>
 
@@ -33,47 +33,48 @@ struct LiLoadReply
 
 struct StaticIopData
 {
-   be2_val<uint32_t> mcpHandle;
+   be2_val<ios::Handle> mcpHandle;
    be2_struct<LiLoadReply> loadReply;
+   alignas(0x40) be2_array<uint8_t, HeapSizePerCore * 3> heapBufs;
 };
 
 static virt_ptr<StaticIopData>
-sIopData;
+sIopData = nullptr;
 
-static std::array<virt_ptr<void>, 3>
-sHeapBufs;
-
-static std::array<TeenyHeap, 3>
-sHeaps;
-
-static virt_ptr<void>
+static virt_ptr<TinyHeap>
 iop_percore_getheap()
 {
-   return sHeapBufs.at(cpu::this_core::id());
+   return virt_cast<TinyHeap *>(
+      virt_addrof(sIopData->heapBufs) + HeapSizePerCore * cpu::this_core::id());
 }
 
 static void
 iop_percore_initheap()
 {
-   auto id = cpu::this_core::id();
-   auto heap = sHeapBufs.at(cpu::this_core::id());
-   sHeaps.at(id).reset(heap.getRawPointer(), HeapSizePerCore);
+   auto heap = iop_percore_getheap();
+   auto data = virt_cast<void *>(virt_cast<virt_addr>(heap) + 0x430);
+   auto alignedData = align_up(data, HeapAllocAlign);
+   auto alignedOffset = virt_cast<virt_addr>(alignedData) - virt_cast<virt_addr>(data);
+   TinyHeap_Setup(heap, 0x430, alignedData,
+                  HeapSizePerCore - 0x430 - alignedOffset);
 }
 
 static virt_ptr<void>
 iop_percore_malloc(uint32_t size)
 {
+   auto heap = iop_percore_getheap();
    size = align_up(size, HeapAllocAlign);
-   auto id = cpu::this_core::id();
-   auto ptr = sHeaps[id].alloc(size, HeapAllocAlign);
-   return virt_cast<void *>(cpu::translate(ptr));
+
+   auto allocPtr = virt_ptr<void> { nullptr };
+   TinyHeap_Alloc(heap, size, HeapAllocAlign, &allocPtr);
+   return allocPtr;
 }
 
 static void
 iop_percore_free(virt_ptr<void> buffer)
 {
-   auto id = cpu::this_core::id();
-   sHeaps[id].free(buffer.getRawPointer());
+   auto heap = iop_percore_getheap();
+   TinyHeap_Free(heap, buffer);
 }
 
 void
@@ -82,7 +83,7 @@ LiInitIopInterface()
    iop_percore_initheap();
 
    if (sIopData->mcpHandle <= 0) {
-      sIopData->mcpHandle = loaderGetMcpHandle();
+      sIopData->mcpHandle = kernel::getMcpHandle();
    }
 }
 
@@ -104,13 +105,43 @@ Loader_AsyncCallback(ios::Error error,
    reply->done = TRUE;
 }
 
+static ios::Error
+LiPollForCompletion()
+{
+   virt_ptr<IPCLDriver> driver;
+   auto error = IPCLDriver_GetInstance(&driver);
+   if (error < ios::Error::OK) {
+      return error;
+   }
+
+   auto request = ipckDriverLoaderPollCompletion();
+   if (!request) {
+      return ios::Error::QEmpty;
+   }
+
+   return IPCLDriver_ProcessReply(driver, request);
+}
+
+int32_t
+LiCheckInterrupts()
+{
+   cpu::this_core::checkInterrupts();
+   return 0;
+}
+
+void
+LiCheckAndHandleInterrupts()
+{
+   LiCheckInterrupts();
+}
+
 ios::Error
 LiLoadAsync(std::string_view name,
             virt_ptr<void> outBuffer,
             uint32_t outBufferSize,
             uint32_t pos,
             MCPFileType fileType,
-            RamProcessId rampid)
+            RamPartitionId rampid)
 {
    auto request = virt_cast<MCPRequestLoadFile *>(iop_percore_malloc(sizeof(MCPRequestLoadFile)));
    request->pos = pos;
@@ -137,34 +168,6 @@ LiLoadAsync(std::string_view name,
 }
 
 static ios::Error
-LiPollForCompletion()
-{
-   virt_ptr<IPCLDriver> driver;
-   auto error = IPCLDriver_GetInstance(&driver);
-   if (error < ios::Error::OK) {
-      return error;
-   }
-
-   auto request = loaderPollIpckCompletion();
-   if (!request) {
-      return ios::Error::QEmpty;
-   }
-
-   return IPCLDriver_ProcessReply(driver, request);
-}
-
-void
-LiCheckAndHandleInterrupts()
-{
-}
-
-int32_t
-LiCheckInterrupts()
-{
-   return 0;
-}
-
-static ios::Error
 LiWaitAsyncReply(virt_ptr<LiLoadReply> reply)
 {
    while (!reply->done) {
@@ -182,10 +185,8 @@ LiWaitAsyncReplyWithInterrupts(virt_ptr<LiLoadReply> reply)
    while (!reply->done) {
       LiPollForCompletion();
 
-      auto interrupts = LiCheckInterrupts();
-      if (interrupts) {
-         // Handle the interrupt
-         // Loader_SysCallRPLLoaderResumeContext
+      if (!reply->done) {
+         cpu::this_core::waitNextInterrupt();
       }
    }
 
@@ -223,12 +224,9 @@ LiWaitIopCompleteWithInterrupts(uint32_t *outBytesRead)
 }
 
 void
-initialiseStaticIopData()
+initialiseIopStaticData()
 {
-   sIopData = virt_cast<StaticIopData *>(allocProcessStatic(sizeof(StaticIopData)));
-   sHeapBufs[0] = allocProcessStatic(HeapSizePerCore, HeapAllocAlign);
-   sHeapBufs[1] = allocProcessStatic(HeapSizePerCore, HeapAllocAlign);
-   sHeapBufs[2] = allocProcessStatic(HeapSizePerCore, HeapAllocAlign);
+   sIopData = allocStaticData<StaticIopData>();
 }
 
 } // namespace cafe::loader::internal

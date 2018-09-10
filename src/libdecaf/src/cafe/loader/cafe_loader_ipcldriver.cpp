@@ -1,4 +1,6 @@
+#include "cafe_loader_heap.h"
 #include "cafe_loader_ipcldriver.h"
+
 #include "cafe/kernel/cafe_kernel_ipckdriver.h"
 #include "cafe/cafe_stackobject.h"
 
@@ -45,99 +47,6 @@ IPCLDriver_InitRequestParameterBlocks(virt_ptr<IPCLDriver> driver)
       request.asyncCallbackData = nullptr;
    }
 
-   return ios::Error::OK;
-}
-
-void
-IPCLDriver_FIFOInit(virt_ptr<IPCLDriverFIFO> fifo)
-{
-   fifo->pushIndex = 0;
-   fifo->popIndex = -1;
-   fifo->count = 0;
-   fifo->requests.fill(nullptr);
-}
-
-/**
- * Push a request into an IPCLDriverFIFO structure
- *
- * \retval ios::Error::OK
- * Success.
- *
- * \retval ios::Error::QFull
- * There was no free space in the queue to push the request.
- */
-ios::Error
-IPCLDriver_FIFOPush(virt_ptr<IPCLDriverFIFO> fifo,
-                    virt_ptr<IPCLDriverRequest> request)
-{
-   if (fifo->pushIndex == fifo->popIndex) {
-      return ios::Error::QFull;
-   }
-
-   fifo->requests[fifo->pushIndex] = request;
-
-   if (fifo->popIndex == -1) {
-      fifo->popIndex = fifo->pushIndex;
-   }
-
-   fifo->count += 1;
-   fifo->pushIndex = static_cast<int32_t>((fifo->pushIndex + 1) % IPCLBufferCount);
-
-   if (fifo->count > fifo->maxCount) {
-      fifo->maxCount = fifo->count;
-   }
-
-   return ios::Error::OK;
-}
-
-/**
- * Pop a request into an IPCLDriverFIFO structure.
- *
- * \retval ios::Error::OK
- * Success.
- *
- * \retval ios::Error::QEmpty
- * There was no requests to pop from the queue.
- */
-ios::Error
-IPCLDriver_FIFOPop(virt_ptr<IPCLDriverFIFO> fifo,
-                   virt_ptr<IPCLDriverRequest> *outRequest)
-{
-   if (fifo->popIndex == -1) {
-      return ios::Error::QEmpty;
-   }
-
-   auto request = fifo->requests[fifo->popIndex];
-   fifo->count -= 1;
-
-   if (fifo->count == 0) {
-      fifo->popIndex = -1;
-   } else {
-      fifo->popIndex = static_cast<int32_t>((fifo->popIndex + 1) % IPCLBufferCount);
-   }
-
-   *outRequest = request;
-   return ios::Error::OK;
-}
-
-/**
- * Peek the next request which would be popped from a IPCLDriverFIFO structure.
- *
- * \retval ios::Error::OK
- * Success.
- *
- * \retval ios::Error::QEmpty
- * There was no requests to pop from the queue.
- */
-ios::Error
-IPCLDriver_PeekFIFO(virt_ptr<IPCLDriverFIFO> fifo,
-                    virt_ptr<virt_ptr<IPCLDriverRequest>> outRequest)
-{
-   if (fifo->popIndex == -1) {
-      return ios::Error::QEmpty;
-   }
-
-   *outRequest = fifo->requests[fifo->popIndex];
    return ios::Error::OK;
 }
 
@@ -343,8 +252,7 @@ ios::Error
 IPCLDriver_ProcessReply(virt_ptr<IPCLDriver> driver,
                         virt_ptr<cafe::kernel::IPCKDriverRequest> ipckRequest)
 {
-   virt_ptr<IPCLDriverRequest> request;
-
+   auto request = virt_ptr<IPCLDriverRequest> { nullptr };
    if (driver->status < IPCLDriverStatus::Open) {
       driver->unexpectedReplyInterrupt++;
       return ios::Error::Invalid;
@@ -392,24 +300,26 @@ static ios::Error
 sendFIFOToKernel(virt_ptr<IPCLDriver> driver)
 {
    auto error = ios::Error::OK;
-   virt_ptr<IPCLDriverRequest> poppedRequest;
+   auto poppedRequest = virt_ptr<IPCLDriverRequest> { nullptr };
 
-   while (driver->status == IPCLDriverStatus::Open) {
+   if (driver->status != IPCLDriverStatus::Open) {
+      return error;
+   }
+
+   while (error == ios::Error::OK) {
       error = IPCLDriver_PeekFIFO(virt_addrof(driver->outboundFifo),
-                                  virt_addrof(driver->currentSendTransaction));
+                                    virt_addrof(driver->currentSendTransaction));
       if (error < ios::Error::OK) {
          break;
       }
 
       driver->status = IPCLDriverStatus::Submitting;
       error = ipckDriverLoaderSubmitRequest(driver->currentSendTransaction->ipckRequestBuffer);
-      IPCLDriver_FIFOPop(virt_addrof(driver->outboundFifo), &poppedRequest);
-      decaf_check(poppedRequest == driver->currentSendTransaction);
-      driver->status = IPCLDriverStatus::Open;
-
-      if (error < ios::Error::OK) {
-         break;
+      if (error == ios::Error::OK) {
+         IPCLDriver_FIFOPop(virt_addrof(driver->outboundFifo), &poppedRequest);
+         decaf_check(poppedRequest == driver->currentSendTransaction);
       }
+      driver->status = IPCLDriverStatus::Open;
    }
 
    return error;
@@ -425,9 +335,13 @@ IPCLDriver_SubmitRequestBlock(virt_ptr<IPCLDriver> driver,
    auto error = IPCLDriver_FIFOPush(virt_addrof(driver->outboundFifo), request);
    if (error < ios::Error::OK) {
       driver->failedRequestSubmitOutboundFIFOFull++;
+
+      // Try flush again
+      sendFIFOToKernel(driver);
    } else {
       driver->requestsSubmitted++;
-      error = sendFIFOToKernel(driver);
+      sendFIFOToKernel(driver);
+      error = ios::Error::OK;
    }
 
    return error;
@@ -451,13 +365,13 @@ IPCLDriver_IoctlAsync(ios::Handle handle,
       return ios::Error::InvalidArg;
    }
 
-   virt_ptr<IPCLDriver> driver;
+   auto driver = virt_ptr<IPCLDriver> { nullptr };
    auto error = IPCLDriver_GetInstance(&driver);
    if (error < ios::Error::OK) {
       return error;
    }
 
-   virt_ptr<IPCLDriverRequest> request;
+   auto request = virt_ptr<IPCLDriverRequest> { nullptr };
    error = IPCLDriver_AllocateRequestBlock(driver,
                                            &request,
                                            handle,
@@ -488,6 +402,12 @@ IPCLDriver_IoctlAsync(ios::Handle handle,
    }
 
    return error;
+}
+
+void
+initialiseIpclDriverStaticData()
+{
+   sIpclData = allocStaticData<StaticIpclData>();
 }
 
 } // namespace cafe::loader::internal
