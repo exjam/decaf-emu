@@ -15,11 +15,20 @@ target_link_libraries(libdecaf
     libgfd
     libgpu
     ${ADDRLIB_LIBRARIES}
+    ${AVCODEC_LIBRARY}
+    ${AVFORMAT_LIBRARY}
+    ${AVUTIL_LIBRARY}
     ${CEREAL_LIBRARIES}
     ${FIXED_POINT_LIBRARIES}
     ${IMGUI_LIBRARIES}
     ${PUGIXML_LIBRARIES}
+    ${SWSCALE_LIBRARY}
     ${ZLIB_LINK})
+target_include_directories(libdecaf PRIVATE
+    ${AVCODEC_INCLUDE_DIR}
+    ${AVFORMAT_INCLUDE_DIR}
+    ${AVUTIL_INCLUDE_DIR}
+    ${SWSCALE_INCLUDE_DIR})
 
 if(APPLE)
     target_compile_definitions(libdecaf PUBLIC DECAF_NOGL)
