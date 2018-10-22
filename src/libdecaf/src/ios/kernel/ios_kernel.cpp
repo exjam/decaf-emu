@@ -103,7 +103,7 @@ startProcesses(bool bootOnlyBSP)
                                     phys_cast<uint8_t *>(stackPtr) + info.stackSize,
                                     info.stackSize,
                                     info.priority,
-                                    ThreadFlags::AllocateIpcBufferPool | ThreadFlags::Detached);
+                                    ThreadFlags::AllocateTLS | ThreadFlags::Detached);
       if (error < Error::OK) {
          gLog->warn("Error creating process thread for pid {}, error = {}", info.pid, error);
          continue;
@@ -283,7 +283,7 @@ start()
    internal::initialiseStaticThreadData();
    internal::initialiseStaticTimerData();
 
-   sData = phys_cast<StaticKernelData *>(allocProcessStatic(sizeof(StaticKernelData)));
+   sData = allocProcessStatic<StaticKernelData>();
    sData->rootTimerMessage.command = RootThreadCommand::Timer;
    sData->sysprotEventMessage.command = RootThreadCommand::SysprotEvent;
 
