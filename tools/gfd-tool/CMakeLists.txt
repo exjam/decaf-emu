@@ -15,4 +15,11 @@ target_link_libraries(gfd-tool
     libgfd
     ${EXCMD_LIBRARIES})
 
+if(DECAF_VULKAN)
+    target_link_libraries(gfd-tool
+        bin2c_vulkan_shaders
+        ${VULKAN_LIBRARIES}
+        ${SPIRV_LIBRARIES})
+endif()
+
 install(TARGETS gfd-tool RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}")

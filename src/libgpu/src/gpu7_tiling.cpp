@@ -1,3 +1,4 @@
+#pragma optimize("", off)
 #include "gpu7_tiling.h"
 
 #include <algorithm>
@@ -84,19 +85,19 @@ static constexpr int MicroTileThickness[] = {
    /* Tiled3BThick = */    4,
 };
 
-static constexpr int
+int
 getMacroTileWidth(TileMode tileMode)
 {
    return MacroTileWidth[static_cast<size_t>(tileMode)];
 }
 
-static constexpr int
+int
 getMacroTileHeight(TileMode tileMode)
 {
    return MacroTileHeight[static_cast<size_t>(tileMode)];
 }
 
-static constexpr int
+int
 getMicroTileThickness(TileMode tileMode)
 {
    return MicroTileThickness[static_cast<size_t>(tileMode)];

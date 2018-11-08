@@ -1,3 +1,5 @@
+#include "gpu7_tiling_vulkan.h"
+
 #include <libgfd/gfd.h>
 
 #include <cassert>
@@ -928,6 +930,12 @@ convertTexture(const std::string &path)
       auto bpp = latte::getDataFormatBitsPerElement(format);
       auto bytesPerElement = bpp / 8;
 
+      // Lets ignore slices and mipmaps
+      tex.surface.depth = 1;
+      tex.surface.mipLevels = 0;
+      tex.surface.mipLevelOffset.fill(0);
+      tex.surface.mipmap.clear();
+
       // Fill out tiling surface information
       gpu7::tiling::SurfaceInfo surface;
       surface.bpp = bpp;
@@ -956,7 +964,8 @@ convertTexture(const std::string &path)
 
       // Untile image
       untiled.resize(gpu7::tiling::calculateImageSize(surface));
-      gpu7::tiling::untileImage(surface, tex.surface.image.data(),
+      // gpu7::tiling::untileImage
+      gpu7::tiling::vulkan::untileImage(surface, tex.surface.image.data(),
                                 untiled.data());
 
       // Unpitch image
@@ -964,21 +973,23 @@ convertTexture(const std::string &path)
       gpu7::tiling::unpitchImage(surface, untiled.data(), imageData.data());
 
       // Untile mipmaps
-      gpu7::tiling::calculateMipMapInfo(surface,
-                                        tex.surface.mipLevels,
-                                        mipMapInfo);
+      if (false) {
+         gpu7::tiling::calculateMipMapInfo(surface,
+                                           tex.surface.mipLevels,
+                                           mipMapInfo);
 
-      untiled.resize(mipMapInfo.size);
-      gpu7::tiling::untileMipMaps(surface, mipMapInfo,
-                                  tex.surface.mipmap.data(), untiled.data());
+         untiled.resize(mipMapInfo.size);
+         gpu7::tiling::untileMipMaps(surface, mipMapInfo,
+                                     tex.surface.mipmap.data(), untiled.data());
 
-      // Unpitch mipmaps
-      gpu7::tiling::calculateUnpitchedMipMapInfo(surface,
-                                                 tex.surface.mipLevels,
-                                                 unpitchedMipMapInfo);
-      mipMapData.resize(unpitchedMipMapInfo.size);
-      gpu7::tiling::unpitchMipMaps(surface, mipMapInfo, unpitchedMipMapInfo,
-                                   untiled.data(), mipMapData.data());
+         // Unpitch mipmaps
+         gpu7::tiling::calculateUnpitchedMipMapInfo(surface,
+                                                    tex.surface.mipLevels,
+                                                    unpitchedMipMapInfo);
+         mipMapData.resize(unpitchedMipMapInfo.size);
+         gpu7::tiling::unpitchMipMaps(surface, mipMapInfo, unpitchedMipMapInfo,
+                                      untiled.data(), mipMapData.data());
+      }
 
       // Save to DDS file
       std::string outname;

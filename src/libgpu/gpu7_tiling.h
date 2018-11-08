@@ -46,6 +46,16 @@ struct SurfaceMipMapInfo
    std::array<int, 13> offsets { };
 };
 
+
+int
+getMacroTileWidth(TileMode tileMode);
+
+int
+getMacroTileHeight(TileMode tileMode);
+
+int
+getMicroTileThickness(TileMode tileMode);
+
 int
 calculateBaseAddressAlignment(const SurfaceInfo &surface);
 
