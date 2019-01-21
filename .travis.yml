@@ -5,8 +5,9 @@ matrix:
     - os: linux
       sudo: required
       dist: trusty
-    - os: osx
-      osx_image: xcode10.1
+# Temporarily disable OSX build because of std::filesystem usage.
+#    - os: osx
+#      osx_image: xcode10.1
 
 addons:
   apt:
@@ -15,8 +16,8 @@ addons:
       - sourceline: 'ppa:cginternals/backports-ppa'
     packages:
       - binutils-2.26
-      - g++-7
-      - gcc-7
+      - g++-8
+      - gcc-8
       - libasound2-dev
       - libcurl4-openssl-dev
       - libglbinding-dbg
@@ -46,8 +47,8 @@ cache:
 
 install:
   - mkdir "$TRAVIS_BUILD_DIR/cbuild"
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 90; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir $HOME/vulkan; cd $HOME/vulkan; wget https://sdk.lunarg.com/sdk/download/1.1.92.1/linux/vulkansdk-linux-x86_64-1.1.92.1.tar.gz; tar zxf vulkansdk-linux-x86_64-1.1.92.1.tar.gz; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pip install --user conan; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then conan user; fi
