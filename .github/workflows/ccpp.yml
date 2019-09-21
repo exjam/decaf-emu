@@ -33,6 +33,7 @@ jobs:
         sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-bionic.list http://packages.lunarg.com/vulkan/lunarg-vulkan-bionic.list
         sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial main"
         sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial universe"
+        sudo apt-add-repository ppa:cginternals/ppa
         sudo apt-get update
         sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev libsdl2-dev libssl-dev zlib1g-dev libavcodec-dev libavfilter-dev libavutil-dev libswscale-dev vulkan-sdk libglbinding-dbg libglbinding-dev
         if [ "${{ matrix.compiler }}" = "gcc" ]; then
