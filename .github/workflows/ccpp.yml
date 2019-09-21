@@ -64,4 +64,4 @@ jobs:
     - name: build
       run: |
         cd build
-        ninja -j2
+        make -j2
