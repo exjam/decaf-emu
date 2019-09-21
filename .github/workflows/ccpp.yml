@@ -7,9 +7,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
+        fetch-depth: 1
+    - name: initialise
+      run: mkdir build
     - name: conan
       run: |
+        cd build
         pip install --user conan
+        source ~/.profile
         conan user
         conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan || true
         conan install .. --build=missing -s compiler=clang -s compiler.version=6.0 -o silent=True -o curl=False -o openssl=False -o ffmpeg=False
@@ -18,7 +25,6 @@ jobs:
         CXX: clang++-6.0
     - name: cmake
       run: |
-        mkdir build
         cd build
         cmake -DDECAF_BUILD_TOOLS=ON -DDECAF_FFMPEG=OFF -DCMAKE_BUILD_TYPE=Release ..
     - name: make
