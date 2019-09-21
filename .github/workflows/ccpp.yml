@@ -7,19 +7,20 @@ jobs:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
-      name: [
-        ubuntu-18.04-gcc-9,
-        ubuntu-18.04-clang-8,
-      ]
-      include: 
-        - name: ubuntu-18.04-gcc-9
-          os: ubuntu-18.04
-          compiler: gcc
-          version: "9"
-        - name: ubuntu-18.04-clang-8
-          os: ubuntu-18.04
-          compiler: clang
-          version: "8"
+      matrix:
+        name: [
+          ubuntu-18.04-gcc-9,
+          ubuntu-18.04-clang-8,
+        ]
+        include: 
+          - name: ubuntu-18.04-gcc-9
+            os: ubuntu-18.04
+            compiler: gcc
+            version: "9"
+          - name: ubuntu-18.04-clang-8
+            os: ubuntu-18.04
+            compiler: clang
+            version: "8"
     steps:
     - uses: actions/checkout@v1
       with:
