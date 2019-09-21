@@ -34,7 +34,8 @@ jobs:
         sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial main"
         sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial universe"
         sudo apt-get update
-        sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev libsdl2-dev libssl-dev zlib1g-dev libavcodec-dev libavfilter-dev libavutil-dev libswscale-dev vulkan-sdk
+        sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev libsdl2-dev libssl-dev zlib1g-dev libavcodec-dev libavfilter-dev libavutil-dev libswscale-dev vulkan-sdk libglbinding-dbg libglbinding-dev
+- xorg-dev
         if [ "${{ matrix.compiler }}" = "gcc" ]; then
           sudo apt-get install -y g++-${{ matrix.version }}
           echo ::set-env name=CC::gcc-${{ matrix.version }}
