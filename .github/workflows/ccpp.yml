@@ -9,7 +9,6 @@ jobs:
     - uses: actions/checkout@v1
       with:
         submodules: true
-        fetch-depth: 1
     - name: initialise
       run: mkdir build
     - name: conan
@@ -27,5 +26,11 @@ jobs:
       run: |
         cd build
         cmake -DDECAF_BUILD_TOOLS=ON -DDECAF_FFMPEG=OFF -DCMAKE_BUILD_TYPE=Release ..
+      env:
+        CC: clang-6.0
+        CXX: clang++-6.0
     - name: make
       run: make
+      env:
+        CC: clang-6.0
+        CXX: clang++-6.0
