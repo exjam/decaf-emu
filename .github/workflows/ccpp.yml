@@ -9,18 +9,18 @@ jobs:
     strategy:
       matrix:
         name: [
-          ubuntu-18.04-gcc-9,
-          ubuntu-18.04-clang-8,
+          ubuntu-18.04-gcc-8,
+          ubuntu-18.04-clang-7,
         ]
         include: 
-          - name: ubuntu-18.04-gcc-9
+          - name: ubuntu-18.04-gcc-8
             os: ubuntu-18.04
             compiler: gcc
-            version: "9"
-          - name: ubuntu-18.04-clang-8
+            version: "8"
+          - name: ubuntu-18.04-clang-7
             os: ubuntu-18.04
             compiler: clang
-            version: "8"
+            version: "7"
     steps:
     - uses: actions/checkout@v1
       with:
