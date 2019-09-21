@@ -4,7 +4,22 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      name: [
+        ubuntu-18.04-gcc-9,
+        ubuntu-18.04-clang-8,
+      ]
+      include: 
+        - name: ubuntu-18.04-gcc-9
+          os: ubuntu-18.04
+          compiler: gcc
+          version: "9"
+        - name: ubuntu-18.04-clang-8
+          os: ubuntu-18.04
+          compiler: clang
+          version: "8"
     steps:
     - uses: actions/checkout@v1
       with:
@@ -15,8 +30,23 @@ jobs:
       run: |
         wget -qO - http://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
         sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-bionic.list http://packages.lunarg.com/vulkan/lunarg-vulkan-bionic.list
-        sudo apt update
-        sudo apt install cmake libcurl4-openssl-dev libsdl2-dev libssl-dev zlib1g-dev libavcodec-dev libavfilter-dev libavutil-dev libswscale-dev vulkan-sdk
+        sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial main"
+        sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial universe"
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev libsdl2-dev libssl-dev zlib1g-dev libavcodec-dev libavfilter-dev libavutil-dev libswscale-dev vulkan-sdk
+        if [ "${{ matrix.compiler }}" = "gcc" ]; then
+          sudo apt-get install -y g++-${{ matrix.version }}
+          echo ::set-env name=CC::gcc-${{ matrix.version }}
+          echo ::set-env name=CXX::g++-${{ matrix.version }}
+          echo ::set-env name=CONAN_COMPILER::gcc
+          echo ::set-env name=CONAN_COMPILER_VERSION::${{ matrix.version }}
+        else
+          sudo apt-get install -y clang-${{ matrix.version }}
+          echo ::set-env name=CC::clang-${{ matrix.version }}
+          echo ::set-env name=CXX::clang++-${{ matrix.version }}
+          echo ::set-env name=CONAN_COMPILER::gcc
+          echo ::set-env name=CONAN_COMPILER_VERSION::${{ matrix.version }}
+        fi
     - name: conan
       run: |
         cd build
@@ -25,26 +55,11 @@ jobs:
         conan user
         conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan || true
         conan install .. --build=missing -o silent=True -o ffmpeg=True -o curl=False -o openssl=False -o sdl2=False -o zlib=False
-      env:
-        CC: clang-6.0
-        CXX: clang++-6.0
-        CONAN_COMPILER: clang
-        CONAN_COMPILER_VERSION: 6.0
-    - name: cmake
+    - name: configure
       run: |
         cd build
-        cmake -DDECAF_BUILD_TOOLS=ON -DDECAF_FFMPEG=ON -DDECAF_VULKAN=ON -DCMAKE_BUILD_TYPE=Release ..
-      env:
-        CC: clang-6.0
-        CXX: clang++-6.0
-        CONAN_COMPILER: clang
-        CONAN_COMPILER_VERSION: 6.0
-    - name: make
+        cmake -DDECAF_BUILD_TOOLS=ON -DDECAF_FFMPEG=ON -DDECAF_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -G Ninja ..
+    - name: build
       run: |
         cd build
-        make -j2
-      env:
-        CC: clang-6.0
-        CXX: clang++-6.0
-        CONAN_COMPILER: clang
-        CONAN_COMPILER_VERSION: 6.0
+        ninja -j2
