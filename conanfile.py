@@ -62,7 +62,7 @@ class DecafConan(ConanFile):
 
    def requirements(self):
       dependency_list = [
-         ('ffmpeg/4.2@bincrafters/stable', 'yes' if self.options.ffmpeg else 'no'),
+         ('ffmpeg/4.0.2@bincrafters/stable', 'yes' if self.options.ffmpeg else 'no'),
          ('libcurl/7.66.0@bincrafters/stable', 'yes' if self.options.curl else 'no'),
          ('OpenSSL/1.1.1c@conan/stable', 'yes' if self.options.openssl else 'no'),
          ('sdl2/2.0.9@bincrafters/stable', 'yes' if self.options.sdl2 else 'no'),
