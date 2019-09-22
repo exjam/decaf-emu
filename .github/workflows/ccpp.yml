@@ -10,17 +10,17 @@ jobs:
       matrix:
         name: [
           ubuntu-18.04-gcc-8,
-          ubuntu-18.04-clang-7,
+          ubuntu-18.04-clang-6,
         ]
         include: 
           - name: ubuntu-18.04-gcc-8
             os: ubuntu-18.04
             compiler: gcc
             version: "8"
-          - name: ubuntu-18.04-clang-7
+          - name: ubuntu-18.04-clang-6
             os: ubuntu-18.04
             compiler: clang
-            version: "7"
+            version: "6"
     steps:
     - uses: actions/checkout@v1
       with:
