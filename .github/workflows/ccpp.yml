@@ -34,7 +34,7 @@ jobs:
         sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-bionic.list http://packages.lunarg.com/vulkan/lunarg-vulkan-bionic.list
         sudo apt-add-repository ppa:cginternals/ppa
         sudo apt-get update
-        sudo apt-get install -y cmake ninja-build libcurl4-openssl-dev libsdl2-dev libssl-dev zlib1g-dev libavcodec-dev libavfilter-dev libavutil-dev libswscale-dev vulkan-sdk
+        sudo apt-get install -y python3-pip cmake ninja-build libcurl4-openssl-dev libsdl2-dev libssl-dev zlib1g-dev libavcodec-dev libavfilter-dev libavutil-dev libswscale-dev vulkan-sdk
         if [ "${{ matrix.compiler }}" = "gcc" ]; then
           sudo apt-get install -y g++-${{ matrix.version }}
           echo ::set-env name=CC::gcc-${{ matrix.version }}
@@ -51,7 +51,7 @@ jobs:
     - name: conan
       run: |
         cd build
-        pip install --user conan
+        pip3 install --user conan
         source ~/.profile
         conan user
         conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan || true
