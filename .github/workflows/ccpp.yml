@@ -75,6 +75,8 @@ jobs:
         Invoke-WebRequest "https://sdk.lunarg.com/sdk/download/1.1.101.0/windows/VulkanSDK-1.1.101.0-Installer.exe?u=" -OutFile "vulkan-sdk.exe"
         Start-Process -Filepath "vulkan-sdk.exe" -ArgumentList "/S"
         echo "::set-env name=VULKAN_SDK::C:\\VulkanSDK\\1.1.101.0"
+        echo ::set-env name=CONAN_COMPILER::cl
+        echo ::set-env name=CONAN_COMPILER_VERSION::15
         
     - name: Conan (Ubuntu)
       if: startsWith(matrix.os, 'ubuntu')
