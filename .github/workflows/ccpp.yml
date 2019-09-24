@@ -66,12 +66,16 @@ jobs:
       if: startsWith(matrix.os, 'macOS')
       run: |
         brew install openssl
+        echo ::set-env name=CPPFLAGS::-I/usr/local/opt/llvm/include -I/usr/local/opt/llvm/include/c++/v1
+        echo ::set-env name=LDFLAGS::-L/usr/local/opt/llvm/lib -Wl,-rpath,/usr/local/opt/llvm/lib
         sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
         
     - name: Install (Windows)
       if: startsWith(matrix.os, 'windows')
       run: |
-        sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+        wget -O vulkan-sdk.exe https://sdk.lunarg.com/sdk/download/1.1.101.0/windows/VulkanSDK-1.1.101.0-Installer.exe?u=
+        vulkan-sdk.exe /S
+        echo ::set-env name=VULKAN_SDK::C:\\VulkanSDK\\1.1.101.0
         
     - name: Conan (Ubuntu)
       if: startsWith(matrix.os, 'ubuntu')
