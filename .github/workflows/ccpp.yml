@@ -73,7 +73,7 @@ jobs:
       shell: powershell
       run: |
         Invoke-WebRequest "https://sdk.lunarg.com/sdk/download/1.1.101.0/windows/VulkanSDK-1.1.101.0-Installer.exe?u=" -OutFile "vulkan-sdk.exe"
-        Start-Process -Filepath "$PSScriptRoot/vulkan-sdk.exe" -ArgumentList "/S"
+        Start-Process -Filepath "vulkan-sdk.exe" -ArgumentList "/S"
         echo ::set-env name=VULKAN_SDK::C:\\VulkanSDK\\1.1.101.0
         
     - name: Conan (Ubuntu)
