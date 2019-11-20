@@ -36,10 +36,30 @@ if(DECAF_BUILD_WUT_TESTS)
             ${HLE_TEST_CONTENT_PATH_SRC}/shaders/pos_colour.vsh)
     endif()
 
+    find_program(WUT_BUILD_TOOL ninja)
+    if(WUT_BUILD_TOOL)
+        set(WUT_CMAKE_GENERATOR "Ninja")
+    else()
+        find_program(WUT_BUILD_TOOL make)
+        if(WUT_BUILD_TOOL)
+            set(WUT_CMAKE_GENERATOR "Unix Makefiles")
+        else()
+            message(FATAL_ERROR "Could not find Ninja or Make to build wut tests with")
+        endif()
+    endif()
+
+    # For some galaxy brain reason cc1.exe requires libwinpthread-1.dll to be in PATH
+    if(WIN32)
+        find_program(DEVKITPRO_WINPTHREAD_DLL NAMES libwinpthread-1.dll HINTS "${DEVKITPRO}/tools/bin" "${DEVKITPRO}/devkitPPC/bin")
+        get_filename_component(DEVKITPRO_WINPTHREAD_PATH ${DEVKITPRO_WINPTHREAD_DLL} DIRECTORY)
+        set(WUT_BUILD_COMMAND set "PATH=${DEVKITPRO_WINPTHREAD_PATH};%PATH%" && "${WUT_BUILD_TOOL}" VERBOSE=1)
+    endif()
+
     externalproject_add(hle-rpx
         SOURCE_DIR "${PROJECT_SOURCE_DIR}/hle"
+        BUILD_COMMAND ${CMAKE_COMMAND} "-DWUT_BUILD_TOOL=${WUT_BUILD_TOOL}" "-DDEVKITPRO_WINPTHREAD_PATH=${DEVKITPRO_WINPTHREAD_PATH}" -P "${PROJECT_SOURCE_DIR}/hle/dkp_wrapper.cmake"
         INSTALL_COMMAND ""
-        CMAKE_GENERATOR "Unix Makefiles"
+        CMAKE_GENERATOR ${WUT_CMAKE_GENERATOR}
         CMAKE_CACHE_ARGS
             -DDEVKITPRO:string=${DEVKITPRO}
             -DCMAKE_TOOLCHAIN_FILE:string=${DEVKITPRO}/wut/share/wut.toolchain.cmake)
