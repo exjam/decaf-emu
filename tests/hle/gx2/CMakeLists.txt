@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
 project(gx2)
-include(${WUT_ROOT}/share/wut.cmake REQUIRED)
+include(${DEVKITPRO}/wut/share/wut.cmake REQUIRED)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)

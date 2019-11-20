@@ -29,11 +29,9 @@ option(DECAF_QT "Build with Qt support" OFF)
 option(DECAF_ENABLE_PCH "Build with precompild headers" ON)
 option(DECAF_ENABLE_LTCG "Build with LTCG on Windows" ON)
 
-set(DEVKITPPC $ENV{DEVKITPPC} CACHE STRING "Path to devkitPPC install")
-set(WUT_ROOT $ENV{WUT_ROOT} CACHE STRING "Path to wut install")
-
-if(DECAF_BUILD_WUT_TESTS AND (NOT DEVKITPPC OR NOT WUT_ROOT))
-    message(FATAL_ERROR "You must have defined DEVKITPPC and WUT_ROOT to build wut tests.")
+set(DEVKITPRO $ENV{DEVKITPRO} CACHE STRING "Path to devkitPro install")
+if(DECAF_BUILD_WUT_TESTS AND (NOT DEVKITPRO))
+    message(FATAL_ERROR "You must have defined DEVKITPRO to build wut tests.")
 endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

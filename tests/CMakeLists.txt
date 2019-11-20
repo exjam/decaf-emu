@@ -41,9 +41,8 @@ if(DECAF_BUILD_WUT_TESTS)
         INSTALL_COMMAND ""
         CMAKE_GENERATOR "Unix Makefiles"
         CMAKE_CACHE_ARGS
-            -DDEVKITPPC:string=${DEVKITPPC}
-            -DWUT_ROOT:string=${WUT_ROOT}
-            -DCMAKE_TOOLCHAIN_FILE:string=${WUT_ROOT}/share/wut.toolchain.cmake)
+            -DDEVKITPRO:string=${DEVKITPRO}
+            -DCMAKE_TOOLCHAIN_FILE:string=${DEVKITPRO}/wut/share/wut.toolchain.cmake)
     externalproject_get_property(hle-rpx BINARY_DIR)
     set_target_properties(hle-rpx PROPERTIES FOLDER tests)
     add_dependencies(hle-rpx hle-content)
