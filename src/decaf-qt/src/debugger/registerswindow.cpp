@@ -1,15 +1,22 @@
+#pragma optimize("", off)
 #include "registerswindow.h"
 #include "kcollapsiblegroupbox.h"
 
 #include <QFontDatabase>
-#include <QGridLayout>
+#include <QTextBlock>
+#include <QTextDocument>
 #include <QVBoxLayout>
-#include <QLabel>
-#include <QLineEdit>
-#include <QDataWidgetMapper>
 
+int regValueBlock = 0;
+int regValuePosition = 0;
+
+template<typename T>
+static QString toHexString(T value, int width)
+{
+   return QString{ "%1" }.arg(value, width / 4, 16, QLatin1Char{ '0' }).toUpper();
+}
 RegistersWindow::RegistersWindow(QWidget *parent) :
-   QWidget(parent)
+   QPlainTextEdit(parent)
 {
    // Set to fixed width font
    auto font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
@@ -19,103 +26,55 @@ RegistersWindow::RegistersWindow(QWidget *parent) :
    }
    setFont(font);
 
-   auto baseLayout = new QVBoxLayout { };
-   setLayout(baseLayout);
-
-   // TODO: Fpscr?
-
    // Text colour to red when changed
    mChangedPalette.setColor(QPalette::Text, Qt::red);
 
-   {
-      auto group = new KCollapsibleGroupBox { };
-      auto layout = new QGridLayout { };
-      group->setTitle(tr("General Purpose Registers"));
-      group->setExpanded(true);
-      group->setLayout(layout);
+   setReadOnly(true);
 
-      for (auto i = 0; i < 32; ++i) {
-         auto row = i % 16;
-         auto column = 2 * (i / 16);
-         auto label = new QLabel { QString { "r%1" }.arg(i) };
-         label->setToolTip(tr("General Purpose Register %1").arg(i));
 
-         auto value = new QLineEdit { "00000000" };
-         value->setInputMask("HHHHHHHH");
-         value->setReadOnly(true);
+   auto cursor = QTextCursor{ document() };
+   cursor.beginEditBlock();
+   document()->clear();
 
-         layout->addWidget(label, row, column + 0);
-         layout->addWidget(value, row, column + 1);
-         mRegisterWidgets.gpr[i] = value;
+   auto registerNameWidth = 10;
+   for (auto i = 0; i < 32; ++i) {
+      if (i != 0) {
+         cursor.insertBlock();
       }
 
-      baseLayout->addWidget(group);
-      mGroups.gpr = group;
+      cursor.insertText(QString{ "R%1" }.arg(i, 2, 10, QLatin1Char{ '0' }));
+      cursor.insertText(QString{ ' ' }.repeated(registerNameWidth - cursor.positionInBlock()));
+
+      mRegisterCursors.gprs[i] = { cursor.blockNumber(), cursor.positionInBlock() };
+      cursor.insertText(toHexString(0, 32));
    }
 
-   {
-      auto group = new KCollapsibleGroupBox { };
-      auto layout = new QGridLayout { };
-      group->setTitle(tr("Misc Registers"));
-      group->setExpanded(true);
-      group->setLayout(layout);
+   cursor.insertBlock();
+   cursor.insertText(QString { "LR" });
+   cursor.insertText(QString { ' ' }.repeated(registerNameWidth - cursor.positionInBlock()));
+   mRegisterCursors.lr = { cursor.blockNumber(), cursor.positionInBlock() };
+   cursor.insertText(toHexString(0, 32));
 
-      {
-         auto label = new QLabel { "LR" };
-         label->setToolTip(tr("Link Register"));
+   cursor.insertBlock();
+   cursor.insertText(QString { "CTR" });
+   cursor.insertText(QString { ' ' }.repeated(registerNameWidth - cursor.positionInBlock()));
+   mRegisterCursors.ctr = { cursor.blockNumber(), cursor.positionInBlock() };
+   cursor.insertText(toHexString(0, 32));
 
-         auto value = new QLineEdit { "00000000" };
-         value->setInputMask("HHHHHHHH");
-         value->setReadOnly(true);
+   cursor.insertBlock();
+   cursor.insertText(QString { "XER" });
+   cursor.insertText(QString { ' ' }.repeated(registerNameWidth - cursor.positionInBlock()));
+   mRegisterCursors.xer = { cursor.blockNumber(), cursor.positionInBlock() };
+   cursor.insertText(toHexString(0, 32));
 
-         layout->addWidget(label, 0, 0);
-         layout->addWidget(value, 0, 1);
-         mRegisterWidgets.lr = value;
-      }
+   cursor.insertBlock();
+   cursor.insertText(QString { "MSR" });
+   cursor.insertText(QString { ' ' }.repeated(registerNameWidth - cursor.positionInBlock()));
+   mRegisterCursors.msr = { cursor.blockNumber(), cursor.positionInBlock() };
+   cursor.insertText(toHexString(0, 32));
 
-      {
-         auto label = new QLabel { "CTR" };
-         label->setToolTip(tr("Count Register"));
-
-         auto value = new QLineEdit { "00000000" };
-         value->setInputMask("HHHHHHHH");
-         value->setReadOnly(true);
-
-         layout->addWidget(label, 0, 2);
-         layout->addWidget(value, 0, 3);
-         mRegisterWidgets.ctr = value;
-      }
-
-      {
-         auto label = new QLabel { "XER" };
-         label->setToolTip(tr("Fixed Point Exception Register"));
-
-         auto value = new QLineEdit { "00000000" };
-         value->setInputMask("HHHHHHHH");
-         value->setReadOnly(true);
-
-         layout->addWidget(label, 1, 0);
-         layout->addWidget(value, 1, 1);
-         mRegisterWidgets.xer = value;
-      }
-
-      {
-         auto label = new QLabel { "MSR" };
-         label->setToolTip(tr("Machine State Register"));
-
-         auto value = new QLineEdit { "00000000" };
-         value->setInputMask("HHHHHHHH");
-         value->setReadOnly(true);
-
-         layout->addWidget(label, 1, 2);
-         layout->addWidget(value, 1, 3);
-         mRegisterWidgets.msr = value;
-      }
-
-      baseLayout->addWidget(group);
-      mGroups.misc = group;
-   }
-
+   cursor.endEditBlock();
+   /*
    {
       auto group = new KCollapsibleGroupBox { };
       auto layout = new QGridLayout { };
@@ -210,7 +169,7 @@ RegistersWindow::RegistersWindow(QWidget *parent) :
       mGroups.ps1 = group;
    }
 
-   baseLayout->addStretch(1);
+   baseLayout->addStretch(1);*/
 }
 
 void
@@ -220,11 +179,7 @@ RegistersWindow::setDebugData(DebugData *debugData)
    connect(mDebugData, &DebugData::dataChanged, this, &RegistersWindow::debugDataChanged);
 }
 
-template<typename T>
-static QString toHexString(T value, int width)
-{
-   return QString { "%1" }.arg(value, width / 4, 16, QLatin1Char{ '0' }).toUpper();
-}
+#if 0
 
 void
 RegistersWindow::updateRegisterValue(QLineEdit *lineEdit,
@@ -275,6 +230,33 @@ RegistersWindow::updateConditionRegisterValue(QLineEdit *lineEdit, uint32_t valu
    }
 }
 
+for (auto i = 0; i < mRegisterWidgets.gpr.size(); ++i) {
+   updateRegisterValue(mRegisterWidgets.gpr[i], thread->gpr[i]);
+}
+
+for (auto i = 0; i < mRegisterWidgets.cr.size(); ++i) {
+   auto value = (thread->cr >> ((7 - i) * 4)) & 0xF;
+   updateConditionRegisterValue(mRegisterWidgets.cr[i], value);
+}
+
+updateRegisterValue(mRegisterWidgets.lr, thread->lr);
+updateRegisterValue(mRegisterWidgets.ctr, thread->ctr);
+updateRegisterValue(mRegisterWidgets.xer, thread->xer);
+updateRegisterValue(mRegisterWidgets.msr, thread->msr);
+
+for (auto i = 0; i < mRegisterWidgets.fprFloat.size(); ++i) {
+   updateRegisterValue(mRegisterWidgets.fprFloat[i],
+      mRegisterWidgets.fprHex[i],
+      thread->fpr[i]);
+}
+
+for (auto i = 0; i < mRegisterWidgets.ps1Float.size(); ++i) {
+   updateRegisterValue(mRegisterWidgets.ps1Float[i],
+      mRegisterWidgets.ps1Hex[i],
+      thread->ps1[i]);
+}
+#endif
+
 void
 RegistersWindow::debugDataChanged()
 {
@@ -283,29 +265,14 @@ RegistersWindow::debugDataChanged()
       return;
    }
 
-   for (auto i = 0; i < mRegisterWidgets.gpr.size(); ++i) {
-      updateRegisterValue(mRegisterWidgets.gpr[i], thread->gpr[i]);
-   }
+   QTextCursor curosr = QTextCursor{ document()->findBlockByNumber(regValueBlock) };
+   curosr.beginEditBlock();
+   curosr.movePosition(QTextCursor::MoveOperation::NextCharacter, QTextCursor::MoveAnchor, regValuePosition);
+   curosr.movePosition(QTextCursor::MoveOperation::EndOfWord, QTextCursor::KeepAnchor);
+   curosr.insertText(toHexString(thread->gpr[1], 32));
+   curosr.endEditBlock();
 
-   for (auto i = 0; i < mRegisterWidgets.cr.size(); ++i) {
-      auto value = (thread->cr >> ((7 - i) * 4)) & 0xF;
-      updateConditionRegisterValue(mRegisterWidgets.cr[i], value);
-   }
-
-   updateRegisterValue(mRegisterWidgets.lr, thread->lr);
-   updateRegisterValue(mRegisterWidgets.ctr, thread->ctr);
-   updateRegisterValue(mRegisterWidgets.xer, thread->xer);
-   updateRegisterValue(mRegisterWidgets.msr, thread->msr);
-
-   for (auto i = 0; i < mRegisterWidgets.fprFloat.size(); ++i) {
-      updateRegisterValue(mRegisterWidgets.fprFloat[i],
-                          mRegisterWidgets.fprHex[i],
-                          thread->fpr[i]);
-   }
-
-   for (auto i = 0; i < mRegisterWidgets.ps1Float.size(); ++i) {
-      updateRegisterValue(mRegisterWidgets.ps1Float[i],
-                          mRegisterWidgets.ps1Hex[i],
-                          thread->ps1[i]);
+   if (!mDebugData->paused()) {
+      mLastThreadState = *thread;
    }
 }

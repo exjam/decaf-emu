@@ -2,37 +2,27 @@
 #include <array>
 #include <cstdint>
 #include <QWidget>
+#include <QPlainTextEdit>
 
 #include "debugdata.h"
 
-class KCollapsibleGroupBox;
-class QLineEdit;
-
-class RegistersWindow : public QWidget
+class RegistersWindow : public QPlainTextEdit
 {
    Q_OBJECT
 
-   struct RegisterWidgets
+   struct RegisterCursor
    {
-      std::array<QLineEdit *, 32> gpr;
-      std::array<QLineEdit *, 32> fprFloat;
-      std::array<QLineEdit *, 32> fprHex;
-      std::array<QLineEdit *, 32> ps1Float;
-      std::array<QLineEdit *, 32> ps1Hex;
-      std::array<QLineEdit *, 8> cr;
-      QLineEdit *xer;
-      QLineEdit *lr;
-      QLineEdit *ctr;
-      QLineEdit *msr;
+      int block;
+      int position;
    };
 
-   struct RegisterGroups
+   struct RegisterCursors
    {
-      KCollapsibleGroupBox *gpr;
-      KCollapsibleGroupBox *misc;
-      KCollapsibleGroupBox *cr;
-      KCollapsibleGroupBox *fpr;
-      KCollapsibleGroupBox *ps1;
+      std::array<RegisterCursor, 32> gprs;
+      RegisterCursor lr;
+      RegisterCursor ctr;
+      RegisterCursor xer;
+      RegisterCursor msr;
    };
 
 public:
@@ -42,14 +32,11 @@ public:
 
 private slots:
    void debugDataChanged();
-   void updateRegisterValue(QLineEdit *lineEdit, uint32_t value);
-   void updateRegisterValue(QLineEdit *lineEditFloat, QLineEdit *lineEditHex, double value);
-   void updateConditionRegisterValue(QLineEdit *lineEdit, uint32_t value);
 
 private:
-   bool mDebugPaused = false;
    DebugData *mDebugData = nullptr;
-   RegisterGroups mGroups = { };
-   RegisterWidgets mRegisterWidgets = { };
+
    QPalette mChangedPalette = { };
+   decaf::debug::CafeThread mLastThreadState = { };
+   RegisterCursors mRegisterCursors;
 };
