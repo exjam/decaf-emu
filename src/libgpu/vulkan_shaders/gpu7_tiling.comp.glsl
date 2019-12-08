@@ -8,7 +8,6 @@ layout(constant_id = 4) const bool IsMacro3X = false;
 layout(constant_id = 5) const bool IsBankSwapped = false;
 layout(constant_id = 6) const uint BitsPerElement = 8;
 layout(constant_id = 7) const bool IsDepth = false;
-layout(constant_id = 8) const uint SubGroupSize = 32;
 
 // Specify our grouping setup
 layout(local_size_x_id = 8, local_size_y = 1, local_size_z = 1) in;
@@ -63,34 +62,14 @@ void copyElems4(uint untiledOffset, uint tiledOffset, uint numElems)
    }
 }
 
-layout(std430, binding = 0) buffer tiledBuffer8 { uvec2 tiled8[]; };
-layout(std430, binding = 1) buffer untiledBuffer8 { uvec2 untiled8[]; };
 void copyElems8(uint untiledOffset, uint tiledOffset, uint numElems)
 {
-   if (IsUntiling) {
-       for (uint i = 0; i < numElems; ++i) {
-         untiled8[(untiledOffset / 8) + i] = tiled8[(tiledOffset / 8) + i];
-      }
-   } else {
-       for (uint i = 0; i < numElems; ++i) {
-         tiled8[(tiledOffset / 8) + i] = untiled8[(untiledOffset / 8) + i];
-      }
-   }
+copyElems4(untiledOffset, tiledOffset, numElems * 2);
 }
 
-layout(std430, binding = 0) buffer tiledBuffer16 { uvec4 tiled16[]; };
-layout(std430, binding = 1) buffer untiledBuffer16 { uvec4 untiled16[]; };
 void copyElems16(uint untiledOffset, uint tiledOffset, uint numElems)
 {
-   if (IsUntiling) {
-       for (uint i = 0; i < numElems; ++i) {
-         untiled16[(untiledOffset / 16)] = tiled16[(tiledOffset / 16)];
-      }
-   } else {
-       for (uint i = 0; i < numElems; ++i) {
-         tiled16[(tiledOffset / 16)] = untiled16[(untiledOffset / 16)];
-      }
-   }
+copyElems4(untiledOffset, tiledOffset, numElems * 4);
 }
 
 void retileMicro8(uint tiledOffset, uint untiledOffset, uint untiledStride)
@@ -330,7 +309,6 @@ void mainMacroTiling(uint tileIndex)
 {
    const uint thinSliceBytes = params.thickSliceBytes / MicroTileThickness;
    const uint untiledStride = params.numTilesPerRow * MicroTileWidth * BytesPerElement;
-   const uint thickMicroTileBytes = params.thinMicroTileBytes * MicroTileThickness;
 
    const uint dispatchSliceIndex = tileIndex / params.numTilesPerSlice;
    const uint sliceTileIndex = tileIndex % params.numTilesPerSlice;

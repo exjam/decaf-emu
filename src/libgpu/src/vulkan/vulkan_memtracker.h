@@ -169,10 +169,12 @@ protected:
       auto newIter = mLookupMap.insert(position, { segment.address, &segment });
 
       auto prevIter = newIter;
+       if (prevIter != mLookupMap.begin()) {
       prevIter--;
       if (prevIter != mLookupMap.end()) {
          prevIter->second->nextSegment = &segment;
       }
+       }
 
       auto nextIter = newIter;
       nextIter++;

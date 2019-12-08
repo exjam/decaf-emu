@@ -325,9 +325,9 @@ createDevice(vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR &surface)
    std::vector<const char*> deviceExtensions = {
       VK_KHR_SWAPCHAIN_EXTENSION_NAME,
       VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME,
-      VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME,
+      // VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME,
       VK_KHR_MAINTENANCE1_EXTENSION_NAME,
-      VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME,
+      // VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME,
       VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
       VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME,
    };
@@ -359,6 +359,22 @@ createDevice(vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR &surface)
       return { };
    }
 
+   auto supportedDeviceExtensions = physicalDevice.enumerateDeviceExtensionProperties();
+   gLog->debug("Supported device extensions:");
+   for (auto &ext : supportedDeviceExtensions) {
+      gLog->debug("  {}", ext.extensionName);
+   }
+
+   auto supportedDeviceFeatures = physicalDevice.getFeatures();
+   gLog->debug("supportedDeviceFeatures.depthClamp = {}", supportedDeviceFeatures.depthClamp);
+   gLog->debug("supportedDeviceFeatures.geometryShader = {}", supportedDeviceFeatures.geometryShader);
+   gLog->debug("supportedDeviceFeatures.textureCompressionBC = {}", supportedDeviceFeatures.textureCompressionBC);
+   gLog->debug("supportedDeviceFeatures.independentBlend = {}", supportedDeviceFeatures.independentBlend);
+   gLog->debug("supportedDeviceFeatures.fillModeNonSolid = {}", supportedDeviceFeatures.fillModeNonSolid);
+   gLog->debug("supportedDeviceFeatures.samplerAnisotropy = {}", supportedDeviceFeatures.samplerAnisotropy);
+   gLog->debug("supportedDeviceFeatures.wideLines = {}", supportedDeviceFeatures.wideLines);
+   gLog->debug("supportedDeviceFeatures.logicOp = {}", supportedDeviceFeatures.logicOp);
+
    auto queuePriorities = std::array<float, 1> { 0.0f };
    auto deviceQueueCreateInfo =
       vk::DeviceQueueCreateInfo {
@@ -370,13 +386,13 @@ createDevice(vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR &surface)
 
    auto deviceFeatures = vk::PhysicalDeviceFeatures { };
    deviceFeatures.depthClamp = true;
-   deviceFeatures.geometryShader = true;
+   deviceFeatures.geometryShader = false;
    deviceFeatures.textureCompressionBC = true;
    deviceFeatures.independentBlend = true;
    deviceFeatures.fillModeNonSolid = true;
    deviceFeatures.samplerAnisotropy = true;
-   deviceFeatures.wideLines = true;
-   deviceFeatures.logicOp = true;
+   deviceFeatures.wideLines = false;
+   deviceFeatures.logicOp = false;
 
    auto devicesFeaturesTF = vk::PhysicalDeviceTransformFeedbackFeaturesEXT { };
    devicesFeaturesTF.transformFeedback = true;
@@ -394,10 +410,15 @@ createDevice(vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR &surface)
    deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
    deviceCreateInfo.pEnabledFeatures = nullptr;
-   deviceCreateInfo.pNext = &deviceFeatures2;
+   deviceCreateInfo.pNext = nullptr; //&deviceFeatures2;
 
-   auto device = physicalDevice.createDevice(deviceCreateInfo);
-   return { device, queueFamilyIndex };
+   try {
+      auto device = physicalDevice.createDevice(deviceCreateInfo);
+      return { device, queueFamilyIndex };
+   } catch (vk::SystemError e) {
+      gLog->error("createDevice failed with {}", e.what());
+      return {};
+   }
 }
 
 static bool

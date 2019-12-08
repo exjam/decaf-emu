@@ -84,7 +84,7 @@ auto supportedDepthFormats = {
 void
 Driver::validateDevice()
 {
-   auto checkFormat = [&](latte::SurfaceFormat format, latte::SQ_TILE_TYPE tileType)
+   /*auto checkFormat = [&](latte::SurfaceFormat format, latte::SQ_TILE_TYPE tileType)
    {
       auto hostFormat = getVkSurfaceFormat(format, tileType);
       auto formatUsages = getVkSurfaceFormatUsage(format);
@@ -129,7 +129,7 @@ Driver::validateDevice()
 
    for (auto format : supportedDepthFormats) {
       checkFormat(format, latte::SQ_TILE_TYPE::DEPTH);
-   }
+   }*/
 }
 
 

@@ -234,7 +234,7 @@ DecafSDL::onGameLoaded(const decaf::GameInfo &info)
    }
 
    auto titleStr = std::string { title.data(), title.size() };
-   SDL_SetWindowTitle(mWindow, titleStr.c_str());
+   // SDL_SetWindowTitle(mWindow, titleStr.c_str());
 
    // We have to be careful not to start rendering until the game is
    // fully loaded, or we will block window messaging.

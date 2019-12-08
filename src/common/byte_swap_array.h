@@ -83,6 +83,8 @@ byte_swap_to_scratch(const void *data, uint32_t numBytes, std::vector<uint8_t>& 
    // Calculate our aligned memory
    auto alignedSwapDest = align_up(swapDest, 16);
    auto alignedSwapSrc = align_up(swapSrc, 16);
+   auto alignedSwapSrcEnd = align_down(alignedSwapSrc, 16);
+    auto unalignedAfterOffset = alignedSwapSrcEnd - alignedSwapSrc;
 
    // Do the unaligned portion
    byte_swap_unaligned<DataType>(swapDest, swapSrc, alignedSwapSrc);
@@ -93,8 +95,10 @@ byte_swap_to_scratch(const void *data, uint32_t numBytes, std::vector<uint8_t>& 
    // since we have pre-sized our destination to account for that.  This will fail if
    // for some reason we cannot read the src past the end of it, but this will never
    // happen with our CPU memory, which is highly aligned (way more than 16).
-   byte_swap_aligned<DataType>(alignedSwapDest, alignedSwapSrc, swapSrcEnd);
+   byte_swap_aligned<DataType>(alignedSwapDest, alignedSwapSrc, alignedSwapSrcEnd);
 
+   byte_swap_unaligned<DataType>(alignedSwapDest + unalignedAfterOffset, alignedSwapSrc + unalignedAfterOffset, swapSrcEnd);
+    
    return alignMatchedScratch;
 }
 
