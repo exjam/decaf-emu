@@ -47,6 +47,21 @@ TEMPGetDirGlobalPath(TEMPDirId dirId,
                      uint32_t pathBufferSize);
 
 TEMPStatus
+TEMPGetFreeSpaceSize(virt_ptr<FSClient> client,
+                     virt_ptr<FSCmdBlock> block,
+                     TEMPDirId dirId,
+                     virt_ptr<uint64_t> outFreeSize,
+                     FSErrorFlag errorMask);
+
+TEMPStatus
+TEMPGetFreeSpaceSizeAsync(virt_ptr<FSClient> client,
+                          virt_ptr<FSCmdBlock> block,
+                          TEMPDirId dirId,
+                          virt_ptr<uint64_t> outFreeSize,
+                          FSErrorFlag errorMask,
+                          virt_ptr<const FSAsyncData> asyncData);
+
+TEMPStatus
 TEMPShutdownTempDir(TEMPDirId id);
 
 } // namespace cafe::nn_temp
